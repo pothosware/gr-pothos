@@ -12,6 +12,12 @@ WARNING = '\033[93m'
 FAIL = '\033[91m'
 ENDC = '\033[0m'
 
+#try to use colorama to support ANSI color codes on windows
+try:
+    from colorama import init
+    init()
+except ImportError: pass
+
 import sys
 def header(msg, *args): sys.stderr.write(HEADER+msg%args+"\n"+ENDC)
 def notice(msg, *args): sys.stderr.write(OKGREEN+msg%args+"\n"+ENDC)
