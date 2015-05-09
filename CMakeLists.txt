@@ -216,13 +216,13 @@ foreach (comp_name ${COMP_NAMES})
     add_custom_command(
         OUTPUT ${wrapper_output}
         COMMAND ${PYTHON_EXECUTABLE} -B
-            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosParser.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
             --target=${comp_name}
             --prefix=${GR_ROOT}
             --out=${wrapper_output}
         DEPENDS
             ${CMAKE_CURRENT_SOURCE_DIR}/registration.tmpl.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosParser.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
             ${CMAKE_CURRENT_SOURCE_DIR}/CppHeaderParser.py
             ${CMAKE_CURRENT_SOURCE_DIR}/xmltodict.py
             ${headers}
