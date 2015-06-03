@@ -174,7 +174,6 @@ list(APPEND COMPONENT_BLACKLIST
     uhd fcd comedi #ignore devices, pothos-sdr
     wxgui qtgui #ignore graphics, pothos-widgets
     messages thread swig #runtime headers
-    vocoder #codec2.h includes internal header
 )
 
 file(GLOB inc_dirs "${GR_INCLUDE_ROOT}/*")
