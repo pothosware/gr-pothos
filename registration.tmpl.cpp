@@ -29,11 +29,12 @@ std::shared_ptr<Pothos::Block> makeGrPothosBlock(boost::shared_ptr<BlockType> bl
  * create block factories
  **********************************************************************/
 #for $factory in $factories
-#if $factory.namespace
-using namespace $factory.namespace;
-#end if
 
-static std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported_factory_args)
+#for $ns in $factory.namespace.split("::")
+namespace $ns {
+#end for
+
+std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported_factory_args)
 {
     auto __block = $(factory.factory_function_path)($factory.internal_factory_args);
     auto __pothos_block = makeGrPothosBlock(__block);
@@ -45,13 +46,22 @@ static std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported
     #end for
     return __pothos_block;
 }
+
+#for $ns in $factory.namespace.split("::")
+} //namespace $ns
+#end for
 #end for
 
 /***********************************************************************
  * meta block factories
  **********************************************************************/
 #for $factory in $meta_factories
-static std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported_factory_args)
+
+#for $ns in $factory.namespace.split("::")
+namespace $ns {
+#end for
+
+std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported_factory_args)
 {
     #for $sub_factory in $factory.sub_factories
     if ($factory.type_key == "$sub_factory.name") return factory__$(sub_factory.name)($sub_factory.internal_factory_args);
@@ -59,13 +69,17 @@ static std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported
 
     throw Pothos::RuntimeException("$factory.name unknown type: "+$factory.type_key);
 }
+
+#for $ns in $factory.namespace.split("::")
+} //namespace $ns
+#end for
 #end for
 
 /***********************************************************************
  * register block factories
  **********************************************************************/
 #for $registration in $registrations
-static Pothos::BlockRegistry register__$(registration.name)("$registration.path", &factory__$(registration.name));
+static Pothos::BlockRegistry register__$(registration.name)("$registration.path", &$registration.namespace::factory__$(registration.name));
 #end for
 
 /***********************************************************************

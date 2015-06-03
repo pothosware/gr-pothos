@@ -580,7 +580,9 @@ def createMetaBlockInfo(grc_data, grc_file, info):
 
     #subfactories for meta factory
     sub_factories = list()
+    namespace = ''
     for factory, blockDesc in info:
+        namespace = factory['namespace']
         internal_factory_args = ['a%d.convert<%s>()'%(i, p['type']) for i, p in enumerate(factory['used_factory_parameters'])]
         sub_factories.append(dict(
             name=factory['name'], internal_factory_args=', '.join(internal_factory_args)))
@@ -594,6 +596,7 @@ def createMetaBlockInfo(grc_data, grc_file, info):
         path=metaBlockDesc['path'],
         exported_factory_args=', '.join(metaFactoryArgs),
         sub_factories=sub_factories,
+        namespace=namespace,
     )
 
     return metaFactory, metaBlockDesc
