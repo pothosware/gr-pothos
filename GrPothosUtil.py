@@ -244,10 +244,17 @@ def grcBlockKeyToCategoryMap(grc_data):
 import cgi
 
 def doxygenToDocLines(doxygen):
-    in_ul_list = False
+    in_unordered_list = False
+    in_paragraph = False
+    in_xmlonly = False
 
     for doxyline in doxygen.splitlines():
         doxyline = cgi.escape(doxyline)
+
+        #supported html tags
+        for tag in ['blockquote', 'i', 'b', 'em', 'p', 'br', 'code', 'pre', 'li', 'ul', 'ol']:
+            for tmpl in ['<%s>', '</%s>']:
+                doxyline = doxyline.replace(cgi.escape(tmpl%tag.upper()), tmpl%tag)
 
         #strip the front comment chars
         def front_strip(line, key):
@@ -255,21 +262,32 @@ def doxygenToDocLines(doxygen):
             if line.startswith(key): return line[len(key):]
             return line
         for begin in ('/*!', '*/', '//!', '//', '*'): doxyline = front_strip(doxyline, begin)
+        if doxyline.strip().startswith('\\'): doxyline = doxyline.strip()
         for begin in ('\\brief', '\\details', '\\ingroup'): doxyline = front_strip(doxyline, begin)
 
-        #unordered list support
-        encountered_li = False
-        if doxyline.startswith('\\li'):
-            doxyline = doxyline.replace('\\li', '<li>') + '</li>'
-            encountered_li = True
+        #htmlonly sections are ok -- keep
+        if doxyline.startswith('\\htmlonly'): doxyline = doxyline.replace('\\htmlonly', '')
+        if doxyline.startswith('\\endhtmlonly'): doxyline = doxyline.replace('\\endhtmlonly', '')
 
-        #deal with adding ul tags
-        if encountered_li and not in_ul_list:
-            in_ul_list = True
-            doxyline = '<ul>' + doxyline
-        if in_ul_list and not encountered_li:
-            in_ul_list = False
-            doxyline = doxyline + '</ul>'
+        #xmlonly sections are removed
+        if doxyline.startswith('\\xmlonly'):
+            in_xmlonly = True
+            continue
+        if in_xmlonly:
+            if doxyline.startswith('\\endxmlonly'):
+                in_xmlonly = False
+            continue
+
+        #unordered list support
+        if doxyline.startswith('\\li'):
+            if in_unordered_list:
+                doxyline = doxyline.replace('\\li', '</li><li>')
+            else:
+                doxyline = doxyline.replace('\\li', '<ul><li>')
+            in_unordered_list = True
+        if in_unordered_list and not doxyline.strip():
+            in_unordered_list = False
+            yield '</li></ul>'
 
         #bold tags
         if doxyline.startswith('\\b'): doxyline = doxyline.replace('\\b', '<b>') + '</b>'
@@ -281,6 +299,8 @@ def doxygenToDocLines(doxygen):
         #formulas -- just do preformatted text for now
         if doxyline.startswith('\\f['): doxyline = doxyline.replace('\\f[', '<pre>')
         if doxyline.startswith('\\f]'): doxyline = doxyline.replace('\\f]', '</pre>')
+        if doxyline.startswith('\\f{'): doxyline = doxyline.replace('\\f{', '<pre>')
+        if doxyline.startswith('\\f}'): doxyline = doxyline.replace('\\f}', '</pre>')
         if '\\f$' in doxyline:
             doxyline = doxyline.replace('\\f$', '<pre>', 1)
             doxyline = doxyline.replace('\\f$', '</pre>', 1)
@@ -292,8 +312,16 @@ def doxygenToDocLines(doxygen):
         if doxyline.startswith('\\section'): doxyline = doxyline.replace('\\section', '<h2>') + '</h2>'
         if doxyline.startswith('\\subsection'): doxyline = doxyline.replace('\\subsection', '<h3>') + '</h3>'
 
-        #ignore \p
-        doxyline = doxyline.replace('\\p', '')
+        #paragraph opening and closing
+        if '\\p' in doxyline:
+            if in_paragraph:
+                doxyline = doxyline.replace('\\p', '</p><p>')
+            else:
+                doxyline = doxyline.replace('\\p', '<p>')
+                in_paragraph = True
+        if in_paragraph and not doxyline.strip():
+            in_paragraph = False
+            yield '</p>'
 
         if doxyline.startswith('\\'): warning('doxyparse unknown field %s', doxyline)
         yield doxyline
