@@ -18,12 +18,14 @@ try:
     init()
 except ImportError: pass
 
+LOG = [""]
+
 import sys
-def header(msg, *args): sys.stderr.write(HEADER+msg%args+"\n"+ENDC)
-def notice(msg, *args): sys.stderr.write(OKGREEN+msg%args+"\n"+ENDC)
-def warning(msg, *args): sys.stderr.write(WARNING+msg%args+"\n"+ENDC)
-def error(msg, *args): sys.stderr.write(FAIL+msg%args+"\n"+ENDC)
-def blacklist(msg, *args): sys.stderr.write(OKBLUE+msg%args+"\n"+ENDC)
+def header(msg, *args): sys.stderr.write(HEADER+msg%args+"\n"+ENDC);    LOG[0]+=msg%args+"\n"
+def notice(msg, *args): sys.stderr.write(OKGREEN+msg%args+"\n"+ENDC);   LOG[0]+="I: "+msg%args+"\n"
+def warning(msg, *args): sys.stderr.write(WARNING+msg%args+"\n"+ENDC);  LOG[0]+="W: "+msg%args+"\n"
+def error(msg, *args): sys.stderr.write(FAIL+msg%args+"\n"+ENDC);       LOG[0]+="E: "+msg%args+"\n"
+def blacklist(msg, *args): sys.stderr.write(OKBLUE+msg%args+"\n"+ENDC); LOG[0]+="B: "+msg%args+"\n"
 
 ########################################################################
 ## blacklists -- hopefully we can fix in the future
@@ -206,7 +208,7 @@ def getGrcFileMatch(className, classInfo, grc_files):
             if has_trailing_dtype(grc_file) and grc_file.split('_')[:-1] == qualified_name.split('_')[:-1]: return grc_file
 
         for grc_file in grc_files: #ignore trailing end on source
-            if has_trailing_dtype(grc_file) and grc_file.split('_') == qualified_name.split('_')[:-1]: return grc_file
+            if not has_trailing_dtype(grc_file) and grc_file.split('_') == qualified_name.split('_')[:-1]: return grc_file
 
     raise Exception('Cant find GRC match for %s'%className)
 
@@ -300,6 +302,7 @@ def doxygenToDocLines(doxygen):
 ## extract and process a single class
 ########################################################################
 from collections import OrderedDict
+import re
 MAX_ARGS = 8
 
 def create_block_path(className, classInfo):
@@ -347,7 +350,15 @@ def match_function_param_to_key(function, argno, param, grc_make, grc_callbacks,
             else: break
         return out
 
-    #TODO look through the make for a call to this function and inspect its args
+    #look through the make for a call to this function and inspect its args
+    if isFactory:
+        make_match = re.match('.*\((\$.*)\).*', grc_make)
+        if make_match:
+            make_args = make_match.groups()[0].split(',')
+            if len(make_args) > argno and '$' in make_args[argno]:
+                make_arg = make_args[argno].strip()
+                make_arg = make_arg.split('$')[1]
+                return strip_off_nonalnum(make_arg)
 
     #inspect callbacks for function matches to see if the param is the same
     if not isFactory:
@@ -617,6 +628,7 @@ def main():
     parser.add_option("--out", dest="out_path", help="output file path or 'stdout'")
     parser.add_option("--target", help="associated cmake library target name")
     parser.add_option("--prefix", help="installation prefix for gnuradio")
+    parser.add_option("--log", help="dump log messages to specified file")
     (options, args) = parser.parse_args()
 
     #check input
@@ -689,6 +701,12 @@ def main():
                     registrations.append(factory) #uses keys: name and path
                     blockDescs.append(blockDesc)
 
+    #summary of findings
+    notice('%s: Total factories        %d', options.target, len(factories))
+    notice('%s: Total meta-factories   %d', options.target, len(meta_factories))
+    notice('%s: Total enumerations     %d', options.target, len(DISCOVERED_ENUMS))
+    notice('%s: Total registrations    %d', options.target, len(registrations))
+
     #generate output source
     output = classInfoIntoRegistration(
         headers=set(headers+ENUM_HEADERS),
@@ -705,5 +723,9 @@ def main():
     if out_path:
         if out_path == 'stdout': print(output)
         else: open(out_path, 'w').write(output)
+
+    #dump the log messages to file
+    if options.log and LOG[0]:
+        open(options.log, 'w').write(LOG[0])
 
 if __name__ == '__main__': main()

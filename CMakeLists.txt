@@ -219,6 +219,7 @@ foreach (comp_name ${COMP_NAMES})
             --target=${comp_name}
             --prefix=${GR_ROOT}
             --out=${wrapper_output}
+            --log=${CMAKE_CURRENT_BINARY_DIR}/${comp_name}.log
         DEPENDS
             ${CMAKE_CURRENT_SOURCE_DIR}/registration.tmpl.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
