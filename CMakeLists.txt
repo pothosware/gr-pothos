@@ -225,6 +225,7 @@ foreach (comp_name ${COMP_NAMES})
             ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
             ${CMAKE_CURRENT_SOURCE_DIR}/CppHeaderParser.py
             ${CMAKE_CURRENT_SOURCE_DIR}/xmltodict.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/blacklist.json
             ${headers}
             ${grc_blocks}
     )

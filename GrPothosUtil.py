@@ -30,21 +30,11 @@ def blacklist(msg, *args): sys.stderr.write(OKBLUE+msg%args+"\n"+ENDC); LOG[0]+=
 ########################################################################
 ## blacklists -- hopefully we can fix in the future
 ########################################################################
-TARGET_BLACKLIST = [
-    'gnuradio-runtime', #no blocks here
-    'gnuradio-pmt', #no blocks here
-    'gnuradio-qtgui', #compiler errors with binding functions -- fix later
-    'gnuradio-uhd', #we have pothos-sdr
-]
+import json
+import os
 
-NAMESPACE_BLACKLIST = [
-]
-
-CLASS_BLACKLIST = [
-    'gr::blocks::multiply_matrix_cc', #causing weird linker error -- symbol missing why?
-    'gr::blocks::multiply_matrix_ff', #causing runtime memory corruption error
-    'gr::blocks::ctrlport_probe_c', #not build anyway, avoids linker error
-]
+BLACKLIST_FILE = os.path.join(os.path.dirname(__file__), 'blacklist.json')
+BLACKLIST_DATA = json.loads(open(BLACKLIST_FILE).read())
 
 ########################################################################
 ## directory and file utils
@@ -119,13 +109,11 @@ def reWriteEnums(source):
 
 def is_this_class_a_block(className, classInfo):
 
-    if classInfo['namespace'] in NAMESPACE_BLACKLIST:
-        blacklist('Blacklisted namespace: %s', classInfo['namespace'])
-        return False
-
-    fully_qualified = classInfo['namespace']+'::'+className
-    if fully_qualified in CLASS_BLACKLIST:
-        blacklist('Blacklisted class: %s', fully_qualified)
+    #check the blacklist before using
+    fully_qualified = '::'.join([classInfo['namespace'], className])
+    if fully_qualified in BLACKLIST_DATA:
+        comment = BLACKLIST_DATA[fully_qualified]['comment']
+        blacklist('Blacklisted class: %s - %s', fully_qualified, comment)
         return False
 
     for inherit in classInfo['inherits']:
@@ -431,6 +419,9 @@ def fromGrcParam(grc_param):
         param_d['widgetKwargs'] = dict(editable=param_type != 'enum')
     return param_d
 
+def stripConstRef(t):
+    return t.replace('&', '').replace('const', '').strip()
+
 def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
 
     #extract GRC data as lists
@@ -451,6 +442,14 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     for method in find_block_methods(classInfo):
         name = method['name']
         if not method['parameters']: continue #ignore getters
+
+        #check the blacklist before using
+        fully_qualified = '::'.join([classInfo['namespace'], className, name])
+        if fully_qualified in BLACKLIST_DATA:
+            comment = BLACKLIST_DATA[fully_qualified]['comment']
+            blacklist('Blacklisted method: %s - %s', fully_qualified, comment)
+            continue
+
         if name not in grc_make and name not in grc_callbacks_str:
             notice("method %s::%s not used in GRC %s", className, name, blockData['key'])
         else: raw_calls.append(method)
@@ -483,7 +482,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         if 'file' in factory_key.lower(): param_used_in_call = False
 
         if param_used_in_call:
-            type_str = factory_param['type'].replace('&', '').replace('const', '').strip()
+            type_str = stripConstRef(factory_param['type'])
             if type_str.startswith('unsigned ') or type_str.startswith('signed '):
                 type_str = type_str.split()[-1] #fixes unsigned int -> int, we dont want spaces
             if 'taps' in factory_key.lower(): internal_factory_args.append('%s(1)'%type_str)
@@ -618,7 +617,7 @@ def createMetaBlockInfo(grc_data, grc_file, info):
     namespace = ''
     for factory, blockDesc in info:
         namespace = factory['namespace']
-        internal_factory_args = ['a%d.convert<%s>()'%(i, p['type']) for i, p in enumerate(factory['used_factory_parameters'])]
+        internal_factory_args = ['a%d.convert<%s>()'%(i, stripConstRef(p['type'])) for i, p in enumerate(factory['used_factory_parameters'])]
         sub_factories.append(dict(
             name=factory['name'], internal_factory_args=', '.join(internal_factory_args)))
 
@@ -678,52 +677,46 @@ def main():
     registrations = list()
     blockDescs = list()
 
-    #warning blacklist for issues
-    if options.target in TARGET_BLACKLIST:
-        blacklist('Blacklisted target: %s', options.target)
+    #extract grc metadata
+    grc_data = dict(gather_grc_data([grc_path], glob=options.target+"_*.xml"))
+    key_to_categories = grcBlockKeyToCategoryMap(grc_data)
 
-    #otherwise continue to parse
-    else:
-        #extract grc metadata
-        grc_data = dict(gather_grc_data([grc_path], glob=options.target+"_*.xml"))
-        key_to_categories = grcBlockKeyToCategoryMap(grc_data)
+    #extract header data
+    header_data = gather_header_data([header_path])
 
-        #extract header data
-        header_data = gather_header_data([header_path])
+    #extract info for each block class
+    grc_file_to_meta_group = dict()
+    for headerPath, cppHeader in header_data:
+        for className, classInfo in query_block_classes(cppHeader):
+            try:
+                file_name = getGrcFileMatch(className, classInfo, grc_data.keys())
+                factory, blockDesc = getBlockInfo(className, classInfo, cppHeader, grc_data[file_name]['block'], key_to_categories)
+                if file_name not in grc_file_to_meta_group: grc_file_to_meta_group[file_name] = list()
+                grc_file_to_meta_group[file_name].append((factory, blockDesc))
+                headers.append(headerPath) #include header on success
+            except Exception as ex:
+                warning('%s: %s', options.target, str(ex))
+                #print traceback.format_exc()
 
-        #extract info for each block class
-        grc_file_to_meta_group = dict()
-        for headerPath, cppHeader in header_data:
-            for className, classInfo in query_block_classes(cppHeader):
-                try:
-                    file_name = getGrcFileMatch(className, classInfo, grc_data.keys())
-                    factory, blockDesc = getBlockInfo(className, classInfo, cppHeader, grc_data[file_name]['block'], key_to_categories)
-                    if file_name not in grc_file_to_meta_group: grc_file_to_meta_group[file_name] = list()
-                    grc_file_to_meta_group[file_name].append((factory, blockDesc))
-                    headers.append(headerPath) #include header on success
-                except Exception as ex:
-                    warning('%s: %s', options.target, str(ex))
-                    #print traceback.format_exc()
-
-        #determine meta-block grouping -- one file to many keys
-        for grc_file, info in grc_file_to_meta_group.iteritems():
-            if len(info) > 1:
-                try:
-                    metaFactory, metaBlockDesc = createMetaBlockInfo(grc_data, grc_file, info)
-                    blockDescs.append(metaBlockDesc)
-                    for factory, blockDesc in info:
-                        factories.append(factory)
-                    meta_factories.append(metaFactory)
-                    registrations.append(metaFactory) #uses keys: name and path
-
-                except Exception as ex:
-                    error(str(ex))
-                    #print traceback.format_exc()
-            else:
+    #determine meta-block grouping -- one file to many keys
+    for grc_file, info in grc_file_to_meta_group.iteritems():
+        if len(info) > 1:
+            try:
+                metaFactory, metaBlockDesc = createMetaBlockInfo(grc_data, grc_file, info)
+                blockDescs.append(metaBlockDesc)
                 for factory, blockDesc in info:
                     factories.append(factory)
-                    registrations.append(factory) #uses keys: name and path
-                    blockDescs.append(blockDesc)
+                meta_factories.append(metaFactory)
+                registrations.append(metaFactory) #uses keys: name and path
+
+            except Exception as ex:
+                error(str(ex))
+                #print traceback.format_exc()
+        else:
+            for factory, blockDesc in info:
+                factories.append(factory)
+                registrations.append(factory) #uses keys: name and path
+                blockDescs.append(blockDesc)
 
     #summary of findings
     notice('%s: Total factories        %d', options.target, len(factories))
