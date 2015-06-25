@@ -245,16 +245,15 @@ import cgi
 
 def doxygenToDocLines(doxygen):
     in_unordered_list = False
-    in_paragraph = False
     in_xmlonly = False
 
     for doxyline in doxygen.splitlines():
         doxyline = cgi.escape(doxyline)
 
         #supported html tags
-        for tag in ['blockquote', 'i', 'b', 'em', 'p', 'br', 'code', 'pre', 'li', 'ul', 'ol']:
+        for tag in "A B BLOCKQUOTE BR CENTER CAPTION CODE DD DFN DIV DL DT EM HR H1 H2 H3 H4 H5 H6 I IMG LI OL P PRE SMALL SPAN STRONG SUB SUP TABLE TD TH TR TT KBD UL VAR".split():
             for tmpl in ['<%s>', '</%s>']:
-                doxyline = doxyline.replace(cgi.escape(tmpl%tag.upper()), tmpl%tag)
+                doxyline = doxyline.replace(cgi.escape(tmpl%tag.upper()), tmpl%tag.lower())
 
         #strip the front comment chars
         def front_strip(line, key):
@@ -312,16 +311,8 @@ def doxygenToDocLines(doxygen):
         if doxyline.startswith('\\section'): doxyline = doxyline.replace('\\section', '<h2>') + '</h2>'
         if doxyline.startswith('\\subsection'): doxyline = doxyline.replace('\\subsection', '<h3>') + '</h3>'
 
-        #paragraph opening and closing
-        if '\\p' in doxyline:
-            if in_paragraph:
-                doxyline = doxyline.replace('\\p', '</p><p>')
-            else:
-                doxyline = doxyline.replace('\\p', '<p>')
-                in_paragraph = True
-        if in_paragraph and not doxyline.strip():
-            in_paragraph = False
-            yield '</p>'
+        #single-word emphasis
+        doxyline = re.sub("\\\\p(\\s*\\w+)", "<em>\\1</em>", doxyline)
 
         if doxyline.startswith('\\'): warning('doxyparse unknown field %s', doxyline)
         yield doxyline
@@ -410,8 +401,13 @@ def get_as_list(data, key):
     return out
 
 def evalToJSON(opt):
+    #support native booleans
     if opt == "True": return True
     if opt == "False": return False
+    #support hexadecimal integers
+    try: int(opt, 16); return opt
+    except: pass
+    #support other JSON type or quote
     try: return json.loads(opt)
     except: return '"%s"'%opt
 
@@ -419,7 +415,7 @@ def fromGrcParam(grc_param):
     param_d = dict(key=grc_param['key'])
     try: param_d['name'] = grc_param['name'] or "" #handles None
     except KeyError: pass
-    try: param_d['default'] = grc_param['value'] or "" #handles None
+    try: param_d['default'] = evalToJSON(grc_param['value'] or "") #handles None
     except KeyError: pass
     if 'hide' in grc_param: param_d['preview'] = 'disable'
     param_type = grc_param['type']
