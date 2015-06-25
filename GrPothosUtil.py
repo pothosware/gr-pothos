@@ -405,13 +405,35 @@ def fromGrcParam(grc_param):
     except KeyError: pass
     try: param_d['default'] = evalToJSON(grc_param['value'] or "") #handles None
     except KeyError: pass
-    if 'hide' in grc_param: param_d['preview'] = 'disable'
+    if 'hide' in grc_param:
+        hide = grc_param['hide']
+        if hide == 'part': param_d['preview'] = 'valid'
+        elif hide == 'all': param_d['preview'] = 'disable'
+        elif hide == 'none': param_d['preview'] = 'enable'
+        else: param_d['preview'] = 'valid' #best guess
+
     param_type = grc_param['type']
+
     if param_type == 'string':
         param_d['widgetType'] = 'StringEntry'
-        #must add quotes for the string-based values
-        if param_d.has_key('default'): param_d['default'] = '"%s"'%param_d['default']
-    if param_type == 'int': param_d['widgetType'] = 'SpinBox'
+
+    if param_type == 'file_open':
+        param_d['widgetType'] = 'FileEntry'
+        param_d['widgetKwargs'] = dict(mode='open')
+
+    if param_type == 'file_save':
+        param_d['widgetType'] = 'FileEntry'
+        param_d['widgetKwargs'] = dict(mode='save')
+
+    if param_type == 'int':
+        param_d['widgetType'] = 'SpinBox'
+        if not param_d.has_key('default'): param_d['default'] = 0
+
+    if param_type in ('string', 'file_open', 'file_save'):
+        if not param_d.has_key('default'): param_d['default'] = ""
+        #must add quotes for the string-based values if the quotes are not present
+        if not re.match('^".*"$', param_d['default']): param_d['default'] = '"%s"'%param_d['default']
+
     options = get_as_list(grc_param, 'option')
     if options:
         param_d['options'] = [dict(name=o['name'], value=evalToJSON(o['key'])) for o in options]
