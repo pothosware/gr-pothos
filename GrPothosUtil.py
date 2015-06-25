@@ -401,18 +401,25 @@ def evalToJSON(opt):
 
 def fromGrcParam(grc_param):
     param_d = dict(key=grc_param['key'])
+    param_type = grc_param['type']
+    options = get_as_list(grc_param, 'option')
+    opts = [get_as_list(o, 'opt') for o in options]
+
+    #parse name
     try: param_d['name'] = grc_param['name'] or "" #handles None
     except KeyError: pass
+
+    #parse default
     try: param_d['default'] = evalToJSON(grc_param['value'] or "") #handles None
     except KeyError: pass
+
+    #parse hide
     if 'hide' in grc_param:
         hide = grc_param['hide']
         if hide == 'part': param_d['preview'] = 'valid'
         elif hide == 'all': param_d['preview'] = 'disable'
         elif hide == 'none': param_d['preview'] = 'enable'
         else: param_d['preview'] = 'valid' #best guess
-
-    param_type = grc_param['type']
 
     if param_type == 'string':
         param_d['widgetType'] = 'StringEntry'
@@ -434,11 +441,21 @@ def fromGrcParam(grc_param):
         #must add quotes for the string-based values if the quotes are not present
         if not re.match('^".*"$', param_d['default']): param_d['default'] = '"%s"'%param_d['default']
 
-    options = get_as_list(grc_param, 'option')
+    #generic combo-box style entry
     if options:
         param_d['options'] = [dict(name=o['name'], value=evalToJSON(o['key'])) for o in options]
         param_d['widgetType'] = 'ComboBox'
         param_d['widgetKwargs'] = dict(editable=param_type != 'enum')
+
+    #support dtype widget entry
+    optsHaveSize = opts and opts[0] and opts[0][0].startswith('size')
+    if param_type == 'enum' and optsHaveSize and 'type' in grc_param['key']:
+        del param_d['options']
+        param_d['default'] = '"complex64"'
+        param_d['preview'] = 'disable'
+        param_d['widgetType'] = 'DTypeChooser'
+        param_d['widgetKwargs'] = dict(float=1,cfloat=1,int=1,cint=1,uint=1,cuint=1)
+
     return param_d
 
 def stripConstRef(t):
@@ -549,6 +566,19 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
                 for value in enum['values']:
                     param_d['options'].append(dict(name=value['name'], value=evalToJSON(value['name'])))
                 if param_d['options'] and 'default' in param_d: del param_d['default'] #let gui pick automatic default
+
+    #adjust factory args to use dtype
+    for param_d in params:
+        if 'widgetType' in param_d and param_d['widgetType'] == 'DTypeChooser':
+            for i, arg in enumerate(internal_factory_args):
+                try: key = fcn_param_to_key[('make', arg)]
+                except KeyError: continue
+                if key == param_d['key']: internal_factory_args[i] = '%s.size()'%arg
+            for i, arg in enumerate(exported_factory_args):
+                arg = arg.split()[-1]
+                try: key = fcn_param_to_key[('make', arg)]
+                except KeyError: continue
+                if key == param_d['key']: exported_factory_args[i] = 'const Pothos::DType &%s'%arg
 
     #factory
     args = list()
