@@ -242,5 +242,14 @@ foreach (comp_name ${COMP_NAMES})
 
 endforeach (comp_name)
 
+POTHOS_MODULE_UTIL(
+    TARGET runtimeSupport
+    SOURCES runtime_wrapper.cc
+    LIBRARIES
+        ${GNURADIO_LIBRARIES}
+        ${Boost_LIBRARIES}
+    DESTINATION blocks/gnuradio
+)
+
 message(STATUS "")
 message(STATUS "")
