@@ -15,6 +15,10 @@ using namespace gr;
 /***********************************************************************
  * enum conversions
  **********************************************************************/
+gr::block::tag_propagation_policy_t int_to_tag_propagation_policy_t(const int v)
+{
+    return gr::block::tag_propagation_policy_t(v);
+}
 gr::block::tag_propagation_policy_t string_to_tag_propagation_policy_t(const std::string &s)
 {
     if (s == "TPP_DONT") return gr::block::TPP_DONT;
@@ -30,5 +34,6 @@ gr::block::tag_propagation_policy_t string_to_tag_propagation_policy_t(const std
 
 pothos_static_block(registerGrPothosUtilRuntimeDocs)
 {
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_tag_propagation_policy_t", Pothos::Callable(&int_to_tag_propagation_policy_t));
     Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_tag_propagation_policy_t", Pothos::Callable(&string_to_tag_propagation_policy_t));
 }

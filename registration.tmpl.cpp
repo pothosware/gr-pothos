@@ -86,6 +86,10 @@ static Pothos::BlockRegistry register__$(registration.name)("$registration.path"
  * enum conversions
  **********************************************************************/
 #for $enum in $enums
+$(enum.namespace)$(enum.name) int_to_$(enum.name)(const int v)
+{
+    return $(enum.namespace)$(enum.name)(v);
+}
 $(enum.namespace)$(enum.name) string_to_$(enum.name)(const std::string &s)
 {
     #for $value in $enum.values
@@ -107,6 +111,7 @@ pothos_static_block(registerGrPothosUtilBlockDocs)
     Pothos::PluginRegistry::add("/blocks/docs$path", std::string("$escaped"));
     #end for
     #for $enum in $enums
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_$(enum.name)", Pothos::Callable(&int_to_$(enum.name)));
     Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_$(enum.name)", Pothos::Callable(&string_to_$(enum.name)));
     #end for
 }

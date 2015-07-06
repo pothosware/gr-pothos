@@ -395,9 +395,16 @@ def evalToJSON(opt):
     #support hexadecimal integers
     try: int(opt, 16); return opt
     except: pass
-    #support other JSON type or quote
+    #support other JSON types
     try: return json.loads(opt)
-    except: return '"%s"'%opt
+    except: pass
+    #support the default variable samp_rate
+    if opt == 'samp_rate': return 'rate'
+    #support enums w/ python namespace
+    if re.match('^[_a-z0-9]+\\.[_A-Z0-9]+$', opt):
+        return '"%s"'%opt.split('.')[-1]
+    #just quote the value
+    return '"%s"'%opt
 
 def fromGrcParam(grc_param):
     param_d = dict(key=grc_param['key'])
@@ -557,16 +564,6 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         if param_key in grc_params: continue
         params.append(dict(key=param_key))
 
-    #use enum options in fcn type in known enums
-    for param_d in params:
-        if param_d['key'] not in all_param_keys: continue
-        for enum in DISCOVERED_ENUMS:
-            if param_d['key'] in param_key_to_type and enum['name'] in param_key_to_type[param_d['key']]:
-                param_d['options'] = list()
-                for value in enum['values']:
-                    param_d['options'].append(dict(name=value['name'], value=evalToJSON(value['name'])))
-                if param_d['options'] and 'default' in param_d: del param_d['default'] #let gui pick automatic default
-
     #adjust factory args to use dtype
     for param_d in params:
         if 'widgetType' in param_d and param_d['widgetType'] == 'DTypeChooser':
@@ -646,7 +643,9 @@ def createMetaBlockInfo(grc_data, grc_file, info):
     #create a new type parameter for the new block desc
     type_param = None
     for param in get_as_list(grc_data[grc_file]['block'], 'param'):
-        if 'type' in param['key'].lower(): type_param = param
+        if 'type' in param['key'].lower():
+            type_param = param
+            break #take the first match
     if not type_param: raise Exception('bad association -- '+grc_data[grc_file]['block']['key'])
 
     #make dict of <opt>fcn:type_suffix</opt> or use key if fcn not found
