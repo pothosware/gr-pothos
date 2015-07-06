@@ -276,6 +276,9 @@ def doxygenToDocLines(doxygen):
             in_unordered_list = False
             yield '</li></ul>'
 
+        #param - no special syntax
+        if doxyline.startswith('\\param'): doxyline = doxyline.replace('\\param', '')
+
         #bold tags
         if doxyline.startswith('\\b'): doxyline = doxyline.replace('\\b', '<b>') + '</b>'
 
@@ -563,6 +566,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     for param_key in all_param_keys:
         if param_key in grc_params: continue
         params.append(dict(key=param_key))
+    params_d = dict([(param_d['key'], param_d) for param_d in params])
 
     #adjust factory args to use dtype
     for param_d in params:
@@ -594,15 +598,18 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         calls.append(call_d)
 
     #install parameter docs from methods with doxygen
-    for function in raw_calls:
-        for param in function['parameters']:
-            try: key = fcn_param_to_key[(function['name'], param['name'])]
-            except KeyError: continue
-            if 'doxygen' not in function: continue
-            docs = list(doxygenToDocLines(function['doxygen']))
-            if not docs: continue
-            for param_d in params:
-                if param_d['key'] == key: param_d['desc'] = docs
+    for function in classInfo['methods']['public']:
+        if 'doxygen' not in function: continue
+        for doxyline in function['doxygen'].splitlines():
+            m = re.match('^.*\\\\param\\s+(\\w+)\\s+(.*)$', doxyline)
+            if not m: continue
+            name, desc = m.groups()
+            try:
+                key = fcn_param_to_key[(function['name'], name)]
+                params_d[key]['desc'] = [desc]
+            except KeyError:
+                matches = difflib.get_close_matches(name, params_d.keys(), n=1)
+                if matches: params_d[matches[0]]['desc'] = [desc]
 
     #category extraction
     categories = list()
