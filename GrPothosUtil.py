@@ -596,6 +596,17 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
             call_d['args'].append(fcn_param_to_key[(function['name'], param['name'])])
         calls.append(call_d)
 
+    #install parameter docs from methods with doxygen
+    for function in raw_calls:
+        for param in function['parameters']:
+            try: key = fcn_param_to_key[(function['name'], param['name'])]
+            except KeyError: continue
+            if 'doxygen' not in function: continue
+            docs = list(doxygenToDocLines(function['doxygen']))
+            if not docs: continue
+            for param_d in params:
+                if param_d['key'] == key: param_d['desc'] = docs
+
     #category extraction
     categories = list()
     try: categories.append(blockData['category'])
