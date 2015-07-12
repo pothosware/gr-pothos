@@ -514,32 +514,14 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
             param_key_to_type[param_key] = param['type']
     all_param_keys = set(fcn_param_to_key.values())
 
-    #for all keys in the factory that appear in a call
-    #then we only need to supply a default to the factory
+    #format arguments for calling into the block's factory
     exported_factory_args = list()
     internal_factory_args = list()
     used_factory_parameters = list()
     for factory_param in raw_factory['parameters']:
-        factory_key = fcn_param_to_key[(raw_factory['name'], factory_param['name'])]
-        param_used_in_call = False
-        for call in raw_calls:
-            for call_param in call['parameters']:
-                if fcn_param_to_key[(call['name'], call_param['name'])] == factory_key:
-                    param_used_in_call = True
-
-        #file-based arguments are in general -- non-defaultable
-        if 'file' in factory_key.lower(): param_used_in_call = False
-
-        if param_used_in_call:
-            type_str = stripConstRef(factory_param['type'])
-            if type_str.startswith('unsigned ') or type_str.startswith('signed '):
-                type_str = type_str.split()[-1] #fixes unsigned int -> int, we dont want spaces
-            if 'taps' in factory_key.lower(): internal_factory_args.append('%s(1)'%type_str)
-            else: internal_factory_args.append('%s()'%type_str) #defaults it
-        else:
-            exported_factory_args.append('%s %s'%(factory_param['type'], factory_param['name']))
-            internal_factory_args.append(factory_param['name'])
-            used_factory_parameters.append(factory_param)
+        exported_factory_args.append('%s %s'%(factory_param['type'], factory_param['name']))
+        internal_factory_args.append(factory_param['name'])
+        used_factory_parameters.append(factory_param)
 
     #determine nports
     nports_calls = list()
