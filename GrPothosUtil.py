@@ -538,6 +538,26 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
             all_param_keys.add(nports)
             nports_calls.append(dict(args=[nports], name="__setNumOutputs", type='initializer'))
 
+    #determine aliases
+    #skip over simple names like 'in' and 'out'
+    alias_calls = list()
+    index = 0
+    for sink in get_as_list(blockData, 'sink'):
+        if 'name' not in sink: continue
+        if 'type' in sink and sink['type'] == 'message': continue
+        alias = sink['name']
+        if alias != 'in': alias_calls.append(
+            dict(args=['"%d"'%index, evalToJSON(alias)], name="__setInputAlias", type='initializer'))
+        index += 1
+    index = 0
+    for source in get_as_list(blockData, 'source'):
+        if 'name' not in source: continue
+        if 'type' in source and source['type'] == 'message': continue
+        alias = source['name']
+        if alias != 'out': alias_calls.append(
+            dict(args=['"%d"'%index, evalToJSON(alias)], name="__setOutputAlias", type='initializer'))
+        index += 1
+
     #determine params
     #first get the ones seen in the grc params
     #then do the ones that were found otherwise
@@ -619,7 +639,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         keywords=[className, classInfo['namespace'], blockData['key']],
         name=blockData['name'],
         categories=categories,
-        calls=calls+nports_calls, #calls list
+        calls=calls+nports_calls+alias_calls, #calls list
         params=params, #parameters list
         args=args, #factory function args
         docs=list(doxygenToDocLines(classInfo['doxygen'])),
