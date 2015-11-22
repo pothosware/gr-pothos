@@ -55,6 +55,7 @@ include_directories(${GNURADIO_BLOCKS_INCLUDE_DIRS})
 include_directories(${GNURADIO_ANALOG_INCLUDE_DIRS})
 include_directories(${GNURADIO_DIGITAL_INCLUDE_DIRS})
 include_directories(${GNURADIO_FFT_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/missing/include)
 
 list(APPEND __GNURADIO_LIBRARIES
     ${GNURADIO_PMT_LIBRARIES}
