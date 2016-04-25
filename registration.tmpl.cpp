@@ -36,13 +36,13 @@ namespace $ns {
 
 std::shared_ptr<Pothos::Block> factory__$(factory.name)($factory.exported_factory_args)
 {
-    auto __block = $(factory.factory_function_path)($factory.internal_factory_args);
-    auto __pothos_block = makeGrPothosBlock(__block);
+    auto __orig_block = $(factory.factory_function_path)($factory.internal_factory_args);
+    auto __pothos_block = makeGrPothosBlock(__orig_block);
     #if $factory.block_methods
-    auto __block_ref = std::ref(*static_cast<$factory.namespace::$factory.className *>(__block.get()));
+    auto __orig_block_ref = std::ref(*static_cast<$factory.namespace::$factory.className *>(__orig_block.get()));
     #end if
     #for $method in $factory.block_methods
-    __pothos_block->registerCallable("$method.name", Pothos::Callable(&$factory.namespace::$factory.className::$method.name).bind(__block_ref, 0));
+    __pothos_block->registerCallable("$method.name", Pothos::Callable(&$factory.namespace::$factory.className::$method.name).bind(__orig_block_ref, 0));
     #end for
     return __pothos_block;
 }
