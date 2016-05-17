@@ -1,11 +1,5 @@
 {
     "gr::blocks::multiply_matrix_cc" : {
         "comment" : "linker error undefined reference"
-    },
-    "gr::digital::pfb_clock_sync_fff::set_taps" : {
-        "comment" : "set_taps() not usable"
-    },
-    "gr::digital::pfb_clock_sync_ccf::set_taps" : {
-        "comment" : "set_taps() not usable"
     }
 }
