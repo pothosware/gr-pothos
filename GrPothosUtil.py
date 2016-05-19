@@ -471,13 +471,16 @@ def fromGrcParam(grc_param):
 def stripConstRef(t):
     return t.replace('&', '').replace('const', '').strip()
 
+def isConstCharStar(typeStr):
+    return typeStr.count('const') == 1 and typeStr.count('char') == 1 and typeStr.count('*') == 1
+
 def splitFactoryParam(factory_param):
     typeStr = factory_param['type']
     argName = factory_param['name']
     argPass = argName
 
     #handle special case of const char * input by replacing with std::string
-    if typeStr.count('const') == 1 and typeStr.count('char') == 1 and typeStr.count('*') == 1:
+    if isConstCharStar(typeStr):
         typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
         argPass = argName + ".c_str()"
 
@@ -510,6 +513,11 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         if fully_qualified in BLACKLIST_DATA:
             comment = BLACKLIST_DATA[fully_qualified]['comment']
             blacklist('Blacklisted method: %s - %s', fully_qualified, comment)
+            continue
+
+        #cant bind calls that use the const char * instead of std::string
+        if any(map(isConstCharStar, [p['type'] for p in method['parameters']])):
+            warning('method %s::%s with "const char *" param is not supported', className, name)
             continue
 
         if name not in grc_make and name not in grc_callbacks_str:
