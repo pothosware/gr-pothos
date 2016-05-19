@@ -1,5 +1,14 @@
 {
     "gr::blocks::multiply_matrix_cc" : {
         "comment" : "linker error undefined reference"
+    },
+    "gr::blocks::file_source::open" : {
+        "comment" : "const char * non-factory arguments not supported"
+    },
+    "gr::blocks::file_sink::open" : {
+        "comment" : "const char * non-factory arguments not supported"
+    },
+    "gr::blocks::wavfile_sink::open" : {
+        "comment" : "const char * non-factory arguments not supported"
     }
 }

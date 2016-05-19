@@ -471,6 +471,19 @@ def fromGrcParam(grc_param):
 def stripConstRef(t):
     return t.replace('&', '').replace('const', '').strip()
 
+def splitFactoryParam(factory_param):
+    typeStr = factory_param['type']
+    argName = factory_param['name']
+    argPass = argName
+
+    #handle special case of const char * input by replacing with std::string
+    if typeStr.count('const') == 1 and typeStr.count('char') == 1 and typeStr.count('*') == 1:
+        typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
+        argPass = argName + ".c_str()"
+
+    #return c++ type, name of the argument, and code to pass into the factory
+    return typeStr, argName, argPass
+
 def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
 
     #extract GRC data as lists
@@ -519,8 +532,9 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     internal_factory_args = list()
     used_factory_parameters = list()
     for factory_param in raw_factory['parameters']:
-        exported_factory_args.append('%s %s'%(factory_param['type'], factory_param['name']))
-        internal_factory_args.append(factory_param['name'])
+        typeStr, argName, argPass = splitFactoryParam(factory_param)
+        exported_factory_args.append('%s %s'%(typeStr, argName))
+        internal_factory_args.append(argPass)
         used_factory_parameters.append(factory_param)
 
     #determine nports
