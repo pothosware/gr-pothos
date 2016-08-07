@@ -643,6 +643,8 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     except KeyError: pass
     if not categories: warning("Not block categories found: %s", className)
     categories = [c if c.startswith('/') else ('/'+c) for c in categories]
+    #remove leading [Core] category name
+    categories = [c.replace('[Core]/', '') for c in categories]
 
     factoryInfo = dict(
         namespace=classInfo['namespace'],
