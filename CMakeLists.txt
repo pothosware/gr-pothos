@@ -204,8 +204,10 @@ endforeach (inc_dir)
 
 ########################################################################
 # Build block adapter
+#
+# Test with PothosUtil --self-tests=/gnuradio
 ########################################################################
-add_subdirectory(adapter)
+add_subdirectory(GrPothosBlock)
 
 ########################################################################
 # Build modules
