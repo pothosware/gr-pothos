@@ -58,7 +58,7 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_packets)
     //create a test plan for packets
     Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
     testPlan->set("enablePackets", true);
-    testPlan->set("enableLabels", true); //TODO cant propagate yet
+    testPlan->set("enableLabels", true);
     auto expected = feeder.callProxy("feedTestPlan", testPlan);
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
