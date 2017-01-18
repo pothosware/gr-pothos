@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2004,2008,2013,2016-2017 Free Software Foundation, Inc.
+ * Copyright 2004,2008,2013,2017 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -23,8 +23,6 @@
 #ifndef INCLUDED_GR_RUNTIME_POTHOS_BLOCK_EXECUTOR_H
 #define INCLUDED_GR_RUNTIME_POTHOS_BLOCK_EXECUTOR_H
 
-#include "pothos_support.h"
-#include <gnuradio/block_detail.h>
 #include <gnuradio/api.h>
 #include <gnuradio/runtime_types.h>
 #include <gnuradio/tags.h>
@@ -36,7 +34,7 @@ namespace gr {
    * \brief Manage the execution of a single block.
    * \ingroup internal
    */
-  class GR_RUNTIME_API pothos_block_executor
+  class pothos_block_executor
   {
   protected:
     block_sptr     d_block;    // The block we're trying to run
@@ -72,7 +70,7 @@ namespace gr {
     /*
      * \brief Run one iteration.
      */
-    state run_one_iteration(Pothos::Block *d, gr::block_detail_sptr &detail);
+    state run_one_iteration();
   };
 
 } /* namespace gr */

@@ -21,72 +21,48 @@
 
 /*!
  * Allow access to has_msg_handler and dispatch_msg
- * in basic_block and the detail structure of block
- * without header modifications or friend accessors.
+ * in basic_block without header modifications or friend accessors.
  */
 #define protected public
 #include <gnuradio/basic_block.h>
 #undef protected
 
+/*!
+ * Allow access to buffer members to point to a custom location.
+ */
 #define private public
-#include <gnuradio/block.h>
-#undef private
-
-#include <gnuradio/block_detail.h>
+#define protected public
 #include <gnuradio/buffer.h>
+#undef private
+#undef protected
+
+#include <gnuradio/block.h>
+#include <gnuradio/block_detail.h>
 
 #include "pothos_block_executor.h"
 #include "pothos_support.h"
 #include <cmath>
 #include <cassert>
-#include <cctype>
 #include <iostream>
 
 /***********************************************************************
- * try our best to infer the data type given the info at hand
+ * Dummy block to store produced messages
  **********************************************************************/
-static Pothos::DType inferDType(const size_t ioSize, const std::string &name, const bool isInput)
+class MsgAcceptBlock : public gr::block
 {
-    Pothos::DType dtype("custom", ioSize); //default if we cant figure it out
-
-    //make a guess based on size and the usual types
-    if ((ioSize%sizeof(gr_complex)) == 0) dtype = Pothos::DType(typeid(gr_complex), ioSize/sizeof(gr_complex));
-    else if ((ioSize%sizeof(float)) == 0) dtype = Pothos::DType(typeid(float), ioSize/sizeof(float));
-    else if ((ioSize%sizeof(short)) == 0) dtype = Pothos::DType(typeid(short), ioSize/sizeof(short));
-    else if ((ioSize%sizeof(char)) == 0) dtype = Pothos::DType(typeid(char), ioSize/sizeof(char));
-
-    const auto lastUnder = name.find_last_of("_");
-    if (lastUnder == std::string::npos) return dtype;
-
-    //grab data type suffix
-    auto suffix = name.substr(lastUnder+1);
-    if (suffix.empty()) return dtype;
-    if (suffix == "sink") return dtype;
-    if (suffix == "source") return dtype;
-
-    //strip leading v (for vector)
-    if (std::tolower(suffix.front()) == 'v') suffix = suffix.substr(1);
-    if (suffix.empty()) return dtype;
-
-    //extract signature character
-    char sig = suffix.front();
-    if (not isInput and suffix.size() >= 2) sig = suffix.at(1);
-    sig = std::tolower(sig);
-
-    //inspect signature and io type for size-multiple
-    #define inspectSig(sigName, sigType) \
-        if (sig == sigName and ioSize%sizeof(sigType) == 0) \
-            return Pothos::DType(typeid(sigType), ioSize/sizeof(sigType))
-    inspectSig('b', char);
-    inspectSig('s', short);
-    inspectSig('i', int);
-    inspectSig('f', float);
-    inspectSig('c', gr_complex);
-    return dtype;
-}
+public:
+    MsgAcceptBlock(const std::string &name):
+        gr::block(
+            "MsgAcceptBlock["+name+"]",
+            gr::io_signature::make(0, 0, 0),
+            gr::io_signature::make(0, 0, 0))
+    {
+        return;
+    }
+};
 
 /***********************************************************************
- * GrPothosBlock interfaces a gr::basic_block to the Pothos framework 
+ * GrPothosBlock interfaces a gr::basic_block to the Pothos framework
  **********************************************************************/
 class GrPothosBlock : public Pothos::Block
 {
@@ -110,17 +86,19 @@ public:
     Pothos::BufferManager::Sptr getOutputBufferManager(const std::string &name, const std::string &domain);
 
 private:
+    boost::shared_ptr<gr::block> d_msg_accept_block;
     boost::shared_ptr<gr::block> d_block;
+    std::vector<uint64_t> d_last_input_tag_offset;
     gr::pothos_block_executor *d_exec;
-    gr::block_detail_sptr &d_detail;
+    gr::block_detail_sptr d_detail;
 };
 
 /***********************************************************************
  * init the name and ports -- called by the block constructor
  **********************************************************************/
 GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
-    d_block(block),
-    d_detail(block->d_detail)
+    d_msg_accept_block(new MsgAcceptBlock(block->name())),
+    d_block(block)
 {
     Pothos::Block::setName(d_block->name());
 
@@ -153,6 +131,10 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
     {
         auto port_id = pmt::vector_ref(msg_ports_out, i);
         this->setupOutput(pmt::symbol_to_string(port_id));
+
+        //subscribe the dummy message acceptor block to hold output messages
+        d_msg_accept_block->message_port_register_in(port_id);
+        d_block->message_port_sub(port_id, pmt::cons(d_msg_accept_block->alias_pmt(), port_id));
     }
 
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumInputs));
@@ -200,27 +182,28 @@ void GrPothosBlock::__setOutputAlias(const std::string &name, const std::string 
 void GrPothosBlock::activate(void)
 {
     //create block detail to handle produce/consume, totals, and tags
-    //detail is made late because some blocks late allocate ports
-    //detail maintains a global count that matches the port totalElements
-    //and therefore its never cleaned up.
-    if (not d_detail)
+    d_detail = gr::make_block_detail(this->inputs().size(), this->outputs().size());
+    d_block->set_detail(d_detail);
+
+    //pick a small default that will successfully allocate
+    //the actual size is filled in later inside of work()
+    static const size_t defaultBufSize(1024);
+
+    //load detail inputs with dummy buffers to store state
+    d_last_input_tag_offset.resize(d_detail->ninputs());
+    for (int i = 0; i < d_detail->ninputs(); i++)
     {
-        d_detail = gr::make_block_detail(this->inputs().size(), this->outputs().size());
+        const auto buff = gr::make_buffer(defaultBufSize, this->input(i)->dtype().size());
+        const auto reader = gr::buffer_add_reader(buff, 0);
+        d_detail->set_input(i, reader);
+        d_last_input_tag_offset[i] = this->input(i)->totalElements();
+    }
 
-        //load detail inputs with dummy buffers to store state
-        for (int i = 0; i < d_detail->ninputs(); i++)
-        {
-            const auto buff = gr::make_buffer(1024, 1);
-            const auto reader = gr::buffer_add_reader(buff, 0);
-            d_detail->set_input(i, reader);
-        }
-
-        //load detail outputs with dummy buffers to store state
-        for (int i = 0; i < d_detail->noutputs(); i++)
-        {
-            const auto buff = gr::make_buffer(1024, 1);
-            d_detail->set_output(i, buff);
-        }
+    //load detail outputs with dummy buffers to store state
+    for (int i = 0; i < d_detail->noutputs(); i++)
+    {
+        const auto buff = gr::make_buffer(defaultBufSize, this->output(i)->dtype().size());
+        d_detail->set_output(i, buff);
     }
 
     auto block = gr::cast_to_block_sptr(d_block->shared_from_this());
@@ -229,6 +212,8 @@ void GrPothosBlock::activate(void)
 
 void GrPothosBlock::deactivate(void)
 {
+    d_detail.reset();
+    d_block->set_detail(d_detail);
     delete d_exec;
 }
 
@@ -246,7 +231,7 @@ void GrPothosBlock::work(void)
             obj_to_pmt(inputPort->popMessage()));
     }
 
-    // handle any queued up messages
+    //handle any queued up messages
     pmt::pmt_t msg;
     for (const auto &i : d_block->get_msg_map())
     {
@@ -259,6 +244,18 @@ void GrPothosBlock::work(void)
           }
         }
     }
+
+    //propagate output messages produced thus far
+    for (const auto &i : d_msg_accept_block->get_msg_map())
+    {
+        while((msg = d_msg_accept_block->delete_head_nowait(i.first)))
+        {
+            this->output(pmt::symbol_to_string(i.first))->postMessage(pmt_to_obj(msg));
+        }
+    }
+
+    //no streaming ports, there is nothing to do in the logic below
+    if (d_detail->noutputs() == 0 and d_detail->ninputs() == 0) return;
 
     //re-apply reserve in-case it changed (low cost setter)
     size_t reserve = d_block->history();
@@ -275,33 +272,56 @@ void GrPothosBlock::work(void)
     if (workInfo.minOutElements == 0) return;
     if (d_block->fixed_rate() and int(workInfo.minOutElements) < d_block->fixed_rate_ninput_to_noutput(reserve)) return;
 
-    //copy input labels into the input buffer's tags
+    //force buffer to look at current port's resources
     for (auto port : this->inputs())
     {
-        const auto buff = d_detail->input(port->index())->buffer();
+        auto &last_label_offset = d_last_input_tag_offset[port->index()];
+        const auto reader = d_detail->input(port->index());
+        const auto buff = reader->buffer();
+
+        buff->d_base = port->buffer().as<char *>();
+        buff->d_bufsize = port->elements();
+        buff->d_write_index = port->elements();
+        reader->d_read_index = 0;
+        reader->d_abs_read_offset = port->totalElements();
+
+        //copy input labels into the input buffer's tags
+        uint64_t new_last_label_offset = 0;
         for (const auto &label : port->labels())
         {
             auto offset = label.index + port->totalElements();
+            if (offset < last_label_offset) continue;
+            new_last_label_offset = offset;
             gr::tag_t tag;
             tag.key = pmt::string_to_symbol(label.id);
             tag.value = obj_to_pmt(label.data);
             tag.offset = offset;
             buff->add_item_tag(tag);
         }
+
+        //update the label propagation stopper to this point
+        if (new_last_label_offset != 0)
+            last_label_offset = new_last_label_offset;
+    }
+
+    //force buffer to look at current port's resources
+    for (auto port : this->outputs())
+    {
+        const auto buff = d_detail->output(port->index());
+        buff->d_base = port->buffer().as<char *>();
+        buff->d_bufsize = port->elements();
+        buff->d_write_index = 0;
+        buff->d_abs_write_offset = port->totalElements();
     }
 
     //run the executor for one iteration to call into derived class's work()
-    d_exec->run_one_iteration(this, d_detail);
+    d_exec->run_one_iteration();
 
     //search the detail input buffer for consume
     for (auto port : this->inputs())
     {
         const auto nread = d_detail->nitems_read(port->index());
         port->consume(nread-port->totalElements());
-
-        //these tags were either used or will be added next run
-        const auto buff = d_detail->input(port->index())->buffer();
-        buff->prune_tags(nread);
     }
 
     //search the detail output buffer for produce
@@ -322,44 +342,27 @@ void GrPothosBlock::work(void)
             label.index = tag.offset - port->totalElements();
             port->postLabel(label);
         }
-        buff->prune_tags(nwritten);
+
+        //remove all tags once posted
+        buff->d_item_tags.clear();
+    }
+
+    //propagate output messages produced from work
+    for (const auto &i : d_msg_accept_block->get_msg_map())
+    {
+        while((msg = d_msg_accept_block->delete_head_nowait(i.first)))
+        {
+            this->output(pmt::symbol_to_string(i.first))->postMessage(pmt_to_obj(msg));
+        }
     }
 }
 
 /***********************************************************************
- * propagateLabels
+ * do not propagate labels here - the executor handles it
  **********************************************************************/
-void GrPothosBlock::propagateLabels(const Pothos::InputPort *inputPort)
+void GrPothosBlock::propagateLabels(const Pothos::InputPort *)
 {
-    switch (d_block->tag_propagation_policy())
-    {
-    case gr::block::TPP_DONT: return;
-    case gr::block::TPP_ONE_TO_ONE:
-    {
-        if (inputPort->index() == -1) return;
-        const auto portIndex = size_t(inputPort->index());
-        if (portIndex >= Pothos::Block::outputs().size()) return;
-        auto outputPort = Pothos::Block::output(portIndex);
-        for (const auto &label : inputPort->labels())
-        {
-            auto newLabel = label;
-            newLabel.index += d_block->sample_delay(inputPort->index());
-            newLabel.index = std::llround(newLabel.index*d_block->relative_rate());
-            outputPort->postLabel(label);
-        }
-    }
-    case gr::block::TPP_ALL_TO_ALL:
-    {
-        for (const auto &label : inputPort->labels())
-        {
-            auto newLabel = label;
-            newLabel.index += d_block->sample_delay(inputPort->index());
-            newLabel.index = std::llround(newLabel.index*d_block->relative_rate());
-            for (auto outputPort : Pothos::Block::outputs()) outputPort->postLabel(label);
-        }
-    }
-    default: return;
-    }
+    return;
 }
 
 /***********************************************************************

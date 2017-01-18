@@ -15,6 +15,7 @@ POTHOS_MODULE_UTIL(
         pothos_block.cc
         pothos_block_executor.cc
         pothos_pmt_helper.cc
+        pothos_infer_dtype.cc
     LIBRARIES
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}
