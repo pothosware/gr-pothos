@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Free Software Foundation, Inc.
+ * Copyright 2014-2017 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -169,7 +169,7 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
 
         //create a metadata map from the pmt dict
         pmt::pmt_t meta(pmt::car(p));
-        auto items = pmt::dict_items(p);
+        auto items = pmt::dict_items(meta);
         for (size_t i = 0; i < pmt::length(items); i++)
         {
             auto item = pmt::nth(i, items);
@@ -180,7 +180,9 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
 
         //create a payload from the blob (zero-copy)
         pmt::pmt_t vect(pmt::cdr(p));
-        packet.payload = Pothos::SharedBuffer(size_t(pmt::blob_data(vect)), pmt::length(vect), std::make_shared<SharedPMTHolder>(vect));
+        packet.payload = Pothos::SharedBuffer(size_t(pmt::blob_data(vect)), pmt::blob_length(vect), std::make_shared<SharedPMTHolder>(vect));
+        packet.payload.dtype = Pothos::DType(typeid(unsigned char));
+        return Pothos::Object(packet);
     }
 
     #define decl_pmt_to_obj(check, conv) if (check(p)) return Pothos::Object(conv(p))
@@ -207,11 +209,14 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
     }
 
     //pair container
+    //pairs are the same type as dictionary, cant do
+    /*
     if (pmt::is_pair(p))
     {
         auto pr = std::make_pair(pmt_to_obj(pmt::car(p)), pmt_to_obj(pmt::cdr(p)));
         return Pothos::Object(pr);
     }
+    */
 
     //skipping tuples -- not really used
 
