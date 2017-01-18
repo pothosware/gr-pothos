@@ -47,6 +47,12 @@ pmt::pmt_t obj_to_pmt(const Pothos::Object &obj)
             meta = pmt::dict_add(meta, pmt::string_to_symbol(pr.first), obj_to_pmt(pr.second));
         }
 
+        //store labels if present
+        if (not packet.labels.empty())
+        {
+            meta = pmt::dict_add(meta, pmt::string_to_symbol("labels"), pmt::make_any(Pothos::Object(packet.labels)));
+        }
+
         //create blob (creates a copy)
         auto blob = pmt::make_blob(packet.payload.as<const void *>(), packet.payload.length);
 
@@ -178,6 +184,14 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
             packet.metadata[key] = val;
         }
 
+        //extract labels if present
+        auto labelsIt = packet.metadata.find("labels");
+        if (labelsIt != packet.metadata.end() and labelsIt->second.type() == typeid(std::vector<Pothos::Label>))
+        {
+            packet.labels = labelsIt->second.extract<std::vector<Pothos::Label>>();
+            packet.metadata.erase(labelsIt);
+        }
+
         //create a payload from the blob (zero-copy)
         pmt::pmt_t vect(pmt::cdr(p));
         packet.payload = Pothos::SharedBuffer(size_t(pmt::blob_data(vect)), pmt::blob_length(vect), std::make_shared<SharedPMTHolder>(vect));
@@ -201,11 +215,16 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
     decl_pmt_to_obj(pmt::is_real, pmt::to_double);
     decl_pmt_to_obj(pmt::is_complex, pmt::to_complex);
 
-    //is it a boost any holding a Object?
+    //boost any container
     if (pmt::is_any(p))
     {
         const auto &a = pmt::any_ref(p);
+
+        //is it a boost any already holding an Object? extract the object
         if (a.type() == typeid(Pothos::Object)) return boost::any_cast<Pothos::Object>(a);
+
+        //otherwise just re-wrap the any into an Object
+        else return Pothos::Object(a);
     }
 
     //pair container

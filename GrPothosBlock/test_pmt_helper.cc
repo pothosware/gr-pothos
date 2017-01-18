@@ -44,7 +44,7 @@ T test_loopback_pmt_helper(const T &inVal, const bool doEquals = true)
     return outVal;
 }
 
-POTHOS_TEST_BLOCK("/gnuradio/block/tests", test_pmt_helper)
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_pmt_helper)
 {
     //boolean
     test_loopback_pmt_helper(true);
@@ -91,7 +91,7 @@ POTHOS_TEST_BLOCK("/gnuradio/block/tests", test_pmt_helper)
     }
 }
 
-POTHOS_TEST_BLOCK("/gnuradio/block/tests", test_pmt_packet)
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_pmt_packet)
 {
     Pothos::Packet inPkt;
     inPkt.metadata["foo"] = Pothos::Object("bar");

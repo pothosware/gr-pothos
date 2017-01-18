@@ -30,6 +30,7 @@ POTHOS_MODULE_UTIL(
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
         test_pmt_helper.cc
+        test_simple_blocks.cc
     LIBRARIES
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}

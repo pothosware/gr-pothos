@@ -76,9 +76,10 @@ public:
 private:
     boost::shared_ptr<gr::block> d_msg_accept_block;
     boost::shared_ptr<gr::block> d_block;
-    std::vector<uint64_t> d_last_input_tag_offset;
     gr::block_executor *d_exec;
     gr::block_detail_sptr d_detail;
+    std::map<pmt::pmt_t, Pothos::InputPort *> d_in_msg_ports;
+    std::map<pmt::pmt_t, Pothos::OutputPort *> d_out_msg_ports;
 };
 
 /***********************************************************************
@@ -110,14 +111,14 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
     {
         auto port_id = pmt::vector_ref(msg_ports_in, i);
         if (pmt::symbol_to_string(port_id) == "system") continue; //ignore ubiquitous system port
-        this->setupInput(pmt::symbol_to_string(port_id));
+        d_in_msg_ports[port_id] = this->setupInput(pmt::symbol_to_string(port_id));
     }
 
     pmt::pmt_t msg_ports_out = d_block->message_ports_out();
     for (size_t i = 0; i < pmt::length(msg_ports_out); i++)
     {
         auto port_id = pmt::vector_ref(msg_ports_out, i);
-        this->setupOutput(pmt::symbol_to_string(port_id));
+        d_out_msg_ports[port_id] = this->setupOutput(pmt::symbol_to_string(port_id));
     }
 
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumInputs));
@@ -173,13 +174,11 @@ void GrPothosBlock::activate(void)
     static const size_t defaultBufSize(1024);
 
     //load detail inputs with dummy buffers to store state
-    d_last_input_tag_offset.resize(d_detail->ninputs());
     for (int i = 0; i < d_detail->ninputs(); i++)
     {
         const auto buff = gr::make_buffer(defaultBufSize, this->input(i)->dtype().size());
         const auto reader = gr::buffer_add_reader(buff, 0);
         d_detail->set_input(i, reader);
-        d_last_input_tag_offset[i] = this->input(i)->totalElements();
     }
 
     //load detail outputs with dummy buffers to store state
@@ -224,27 +223,27 @@ void GrPothosBlock::deactivate(void)
  **********************************************************************/
 void GrPothosBlock::work(void)
 {
+    pmt::pmt_t msg;
+
     //forward messages into the queues
-    for (const auto &pair : Pothos::Block::allInputs())
+    for (const auto &pair : d_in_msg_ports)
     {
-        auto inputPort = pair.second;
-        while (inputPort->hasMessage())
+        while (pair.second->hasMessage())
         {
-            const auto portId = pmt::string_to_symbol(inputPort->name());
-            const auto msg = obj_to_pmt(inputPort->popMessage());
-            auto handler = d_block->d_msg_handlers[portId];
+            msg = obj_to_pmt(pair.second->popMessage());
+            auto handler = d_block->d_msg_handlers[pair.first];
             if (handler) handler(msg);
-            else d_block->_post(portId, msg);
+            else d_block->_post(pair.first, msg);
         }
     }
 
     //propagate output messages produced thus far
-    pmt::pmt_t msg;
-    for (const auto &i : d_msg_accept_block->get_msg_map())
+    //used by the message only blocks that wont continue work
+    for (const auto &pair : d_out_msg_ports)
     {
-        while((msg = d_msg_accept_block->delete_head_nowait(i.first)))
+        while ((msg = d_msg_accept_block->delete_head_nowait(pair.first)))
         {
-            this->output(pmt::symbol_to_string(i.first))->postMessage(pmt_to_obj(msg));
+            pair.second->postMessage(pmt_to_obj(msg));
         }
     }
 
@@ -269,7 +268,6 @@ void GrPothosBlock::work(void)
     //force buffer to look at current port's resources
     for (auto port : this->inputs())
     {
-        auto &last_label_offset = d_last_input_tag_offset[port->index()];
         const auto reader = d_detail->input(port->index());
         const auto buff = reader->buffer();
 
@@ -279,23 +277,18 @@ void GrPothosBlock::work(void)
         reader->d_read_index = 0;
         reader->d_abs_read_offset = port->totalElements();
 
-        //copy input labels into the input buffer's tags
-        uint64_t new_last_label_offset = 0;
-        for (const auto &label : port->labels())
+        //move input labels into the input buffer's tags
+        while (port->labels().begin() != port->labels().end())
         {
+            const auto &label = *port->labels().begin();
             auto offset = label.index + port->totalElements();
-            if (offset < last_label_offset) continue;
-            new_last_label_offset = offset;
             gr::tag_t tag;
             tag.key = pmt::string_to_symbol(label.id);
             tag.value = obj_to_pmt(label.data);
             tag.offset = offset;
             buff->add_item_tag(tag);
+            port->removeLabel(label);
         }
-
-        //update the label propagation stopper to this point
-        if (new_last_label_offset != 0)
-            last_label_offset = new_last_label_offset;
     }
 
     //force buffer to look at current port's resources
@@ -342,11 +335,11 @@ void GrPothosBlock::work(void)
     }
 
     //propagate output messages produced from work
-    for (const auto &i : d_msg_accept_block->get_msg_map())
+    for (const auto &pair : d_out_msg_ports)
     {
-        while((msg = d_msg_accept_block->delete_head_nowait(i.first)))
+        while ((msg = d_msg_accept_block->delete_head_nowait(pair.first)))
         {
-            this->output(pmt::symbol_to_string(i.first))->postMessage(pmt_to_obj(msg));
+            pair.second->postMessage(pmt_to_obj(msg));
         }
     }
 }
