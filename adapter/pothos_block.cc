@@ -19,6 +19,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
+class GrPothosBlock;
+
 #include <Pothos/Framework.hpp>
 #include "gr_pothos_access.h" //include first for public access to members
 #include <gnuradio/buffer.h>
@@ -226,26 +228,18 @@ void GrPothosBlock::work(void)
     for (const auto &pair : Pothos::Block::allInputs())
     {
         auto inputPort = pair.second;
-        while (inputPort->hasMessage()) d_block->_post(
-            pmt::string_to_symbol(inputPort->name()),
-            obj_to_pmt(inputPort->popMessage()));
-    }
-
-    //handle any queued up messages
-    pmt::pmt_t msg;
-    for (const auto &i : d_block->get_msg_map())
-    {
-        // Check if we have a message handler attached before getting
-        // any messages. This is mostly a protection for the unknown
-        // startup sequence of the threads.
-        if(d_block->has_msg_handler(i.first)) {
-          while((msg = d_block->delete_head_nowait(i.first))) {
-            d_block->dispatch_msg(i.first,msg);
-          }
+        while (inputPort->hasMessage())
+        {
+            const auto portId = pmt::string_to_symbol(inputPort->name());
+            const auto msg = obj_to_pmt(inputPort->popMessage());
+            auto handler = d_block->d_msg_handlers[portId];
+            if (handler) handler(msg);
+            else d_block->_post(portId, msg);
         }
     }
 
     //propagate output messages produced thus far
+    pmt::pmt_t msg;
     for (const auto &i : d_msg_accept_block->get_msg_map())
     {
         while((msg = d_msg_accept_block->delete_head_nowait(i.first)))
