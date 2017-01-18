@@ -9,4 +9,4 @@ the Pothos framework API and with the Pothos GUI.
 
 Find instructions and additional information on the GNU Radio toolkit wiki:
 
-* https://github.com/pothosware/gnuradio/wiki
+* https://github.com/pothosware/gr-pothos/wiki
