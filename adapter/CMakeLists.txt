@@ -18,11 +18,15 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gr_pothos_access.h" "${header_contents}"
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+#gr libs may or be compiled with counters
+#specify this flag just in-case because
+#the block_executor may use an extra field
+add_definitions(-DGR_PERFORMANCE_COUNTERS)
+
 POTHOS_MODULE_UTIL(
     TARGET GrPothosBlock
     SOURCES
         pothos_block.cc
-        pothos_block_executor.cc
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
         test_pmt_helper.cc

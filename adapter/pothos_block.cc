@@ -27,7 +27,7 @@ class GrPothosBlock;
 #include <gnuradio/basic_block.h>
 #include <gnuradio/block.h>
 #include <gnuradio/block_detail.h>
-#include "pothos_block_executor.h" //local copy of stock executor, missing from gr install
+#include "block_executor.h" //local copy of stock executor, missing from gr install
 #include "pothos_support.h" //misc utility functions
 #include <cmath>
 #include <cassert>
@@ -77,7 +77,7 @@ private:
     boost::shared_ptr<gr::block> d_msg_accept_block;
     boost::shared_ptr<gr::block> d_block;
     std::vector<uint64_t> d_last_input_tag_offset;
-    gr::pothos_block_executor *d_exec;
+    gr::block_executor *d_exec;
     gr::block_detail_sptr d_detail;
 };
 
@@ -200,7 +200,7 @@ void GrPothosBlock::activate(void)
     }
 
     auto block = gr::cast_to_block_sptr(d_block->shared_from_this());
-    d_exec = new gr::pothos_block_executor(block);
+    d_exec = new gr::block_executor(block);
 }
 
 void GrPothosBlock::deactivate(void)

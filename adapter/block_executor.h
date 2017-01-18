@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2004,2008,2013,2017 Free Software Foundation, Inc.
+ * Copyright 2004,2008,2013 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -20,8 +20,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef INCLUDED_GR_RUNTIME_POTHOS_BLOCK_EXECUTOR_H
-#define INCLUDED_GR_RUNTIME_POTHOS_BLOCK_EXECUTOR_H
+#ifndef INCLUDED_GR_RUNTIME_BLOCK_EXECUTOR_H
+#define INCLUDED_GR_RUNTIME_BLOCK_EXECUTOR_H
 
 #include <gnuradio/api.h>
 #include <gnuradio/runtime_types.h>
@@ -34,7 +34,7 @@ namespace gr {
    * \brief Manage the execution of a single block.
    * \ingroup internal
    */
-  class pothos_block_executor
+  class GR_RUNTIME_API block_executor
   {
   protected:
     block_sptr     d_block;    // The block we're trying to run
@@ -56,8 +56,8 @@ namespace gr {
 #endif /* GR_PERFORMANCE_COUNTERS */
 
   public:
-    pothos_block_executor(block_sptr block, int max_noutput_items=100000);
-    ~pothos_block_executor();
+    block_executor(block_sptr block, int max_noutput_items=100000);
+    ~block_executor();
 
     enum state {
       READY,	        // We made progress; everything's cool.
@@ -75,4 +75,4 @@ namespace gr {
 
 } /* namespace gr */
 
-#endif /* INCLUDED_GR_RUNTIME_POTHOS_BLOCK_EXECUTOR_H */
+#endif /* INCLUDED_GR_RUNTIME_BLOCK_EXECUTOR_H */
