@@ -20,11 +20,10 @@
  */
 
 #pragma once
-#include <Pothos/Object.hpp>
-#include <Pothos/Framework.hpp>
-#include <gnuradio/basic_block.h>
-#include <gnuradio/block.h>
+#include <Pothos/Object/Object.hpp>
+#include <Pothos/Framework/DType.hpp>
 #include <pmt/pmt.h>
+#include <string>
 
 /*!
  * Conversions between Object and pmt_t types.

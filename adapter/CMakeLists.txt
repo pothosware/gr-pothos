@@ -4,10 +4,21 @@
 # This module contains a Pothos::Block which can wrap a gr::block
 ########################################################################
 
-if (MSVC)
-    #fix The C++ Standard Library forbids macroizing keywords
-    add_definitions(-D_XKEYCHECK_H)
-endif (MSVC)
+#create headers that allow public access to select data structures
+#we choose a find/replace method rather than using macro definitions
+#buffer.h: Allow access to buffer members to point to a custom location
+#basic_block.h: Allow access to has_msg_handler and dispatch_msg
+unset(header_contents)
+foreach(header "buffer.h" "basic_block.h")
+    file(READ "${GR_INCLUDE_ROOT}/${header}" _header_contents)
+    set(header_contents "${header_contents}\n${_header_contents}")
+endforeach(header)
+
+string(REPLACE "private:" "public:" header_contents "${header_contents}")
+string(REPLACE "protected:" "public:" header_contents "${header_contents}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gr_pothos_access.h" "${header_contents}")
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 POTHOS_MODULE_UTIL(
     TARGET GrPothosBlock

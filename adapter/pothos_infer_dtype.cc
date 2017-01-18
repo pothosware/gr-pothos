@@ -20,6 +20,7 @@
  */
 
 #include "pothos_support.h"
+#include <gnuradio/types.h>
 #include <cctype>
 
 Pothos::DType inferDType(const size_t ioSize, const std::string &name, const bool isInput)

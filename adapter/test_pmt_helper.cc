@@ -22,6 +22,7 @@
 #include "pothos_support.h"
 #include <Pothos/Testing.hpp>
 #include <Pothos/Object/Containers.hpp>
+#include <Pothos/Framework/Packet.hpp>
 #include <iostream>
 
 template <typename T>

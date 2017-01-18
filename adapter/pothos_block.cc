@@ -19,28 +19,14 @@
  * Boston, MA 02110-1301, USA.
  */
 
-/*!
- * Allow access to has_msg_handler and dispatch_msg
- * in basic_block without header modifications or friend accessors.
- */
-#define protected public
-#include <gnuradio/basic_block.h>
-#undef protected
-
-/*!
- * Allow access to buffer members to point to a custom location.
- */
-#define private public
-#define protected public
+#include <Pothos/Framework.hpp>
+#include "gr_pothos_access.h" //include first for public access to members
 #include <gnuradio/buffer.h>
-#undef private
-#undef protected
-
+#include <gnuradio/basic_block.h>
 #include <gnuradio/block.h>
 #include <gnuradio/block_detail.h>
-
-#include "pothos_block_executor.h"
-#include "pothos_support.h"
+#include "pothos_block_executor.h" //local copy of stock executor, missing from gr install
+#include "pothos_support.h" //misc utility functions
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -97,7 +83,6 @@ private:
  * init the name and ports -- called by the block constructor
  **********************************************************************/
 GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
-    d_msg_accept_block(new MsgAcceptBlock(block->name())),
     d_block(block)
 {
     Pothos::Block::setName(d_block->name());
@@ -131,10 +116,6 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
     {
         auto port_id = pmt::vector_ref(msg_ports_out, i);
         this->setupOutput(pmt::symbol_to_string(port_id));
-
-        //subscribe the dummy message acceptor block to hold output messages
-        d_msg_accept_block->message_port_register_in(port_id);
-        d_block->message_port_sub(port_id, pmt::cons(d_msg_accept_block->alias_pmt(), port_id));
     }
 
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumInputs));
@@ -206,12 +187,31 @@ void GrPothosBlock::activate(void)
         d_detail->set_output(i, buff);
     }
 
+    //subscribe the dummy message acceptor block to hold output messages
+    d_msg_accept_block.reset(new MsgAcceptBlock(d_block->name()));
+    pmt::pmt_t msg_ports_out = d_block->message_ports_out();
+    for (size_t i = 0; i < pmt::length(msg_ports_out); i++)
+    {
+        auto port_id = pmt::vector_ref(msg_ports_out, i);
+        d_msg_accept_block->message_port_register_in(port_id);
+        d_block->message_port_sub(port_id, pmt::cons(d_msg_accept_block->alias_pmt(), port_id));
+    }
+
     auto block = gr::cast_to_block_sptr(d_block->shared_from_this());
     d_exec = new gr::pothos_block_executor(block);
 }
 
 void GrPothosBlock::deactivate(void)
 {
+    //unsubscribe the dummy message acceptor block
+    pmt::pmt_t msg_ports_out = d_block->message_ports_out();
+    for (size_t i = 0; i < pmt::length(msg_ports_out); i++)
+    {
+        auto port_id = pmt::vector_ref(msg_ports_out, i);
+        d_block->message_port_unsub(port_id, pmt::cons(d_msg_accept_block->alias_pmt(), port_id));
+    }
+    d_msg_accept_block.reset();
+
     d_detail.reset();
     d_block->set_detail(d_detail);
     delete d_exec;
