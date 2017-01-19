@@ -406,6 +406,9 @@ def evalToJSON(opt):
     #support enums w/ python namespace
     if re.match('^[_a-z0-9]+\\.[_A-Z0-9]+$', opt):
         return '"%s"'%opt.split('.')[-1]
+    #strip pmt calls, we can handle native expressions
+    m = re.match('pmt\.\w+\((.+)\)', opt)
+    if m: return m.groups()[0]
     #just quote the value
     return '"%s"'%opt
 
