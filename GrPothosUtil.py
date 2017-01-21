@@ -446,7 +446,15 @@ def fromGrcParam(grc_param):
         param_d['widgetKwargs'] = dict(mode='save')
 
     if param_type == 'int':
-        param_d['widgetType'] = 'SpinBox'
+
+        #only use the spinbox when the default value is int-parsable
+        #we dont use spinbox for hex values and default expressions
+        if grc_param.has_key('value'):
+            try:
+                int(grc_param['value'])
+                param_d['widgetType'] = 'SpinBox'
+            except Exception as ValueError: pass
+
         if not param_d.has_key('default'): param_d['default'] = 0
 
     if param_type in ('string', 'file_open', 'file_save'):

@@ -220,6 +220,9 @@ foreach (comp_name ${COMP_NAMES})
     file(GLOB_RECURSE headers "${GR_INCLUDE_ROOT}/${comp_name}/*.h")
     file(GLOB_RECURSE grc_blocks "${GRC_BLOCKS_ROOT}/${comp_name}_*.xml")
 
+    #custom target for manual build of wrapper for debugging
+    add_custom_target(${comp_name}_wrapper DEPENDS ${wrapper_output})
+
     add_custom_command(
         OUTPUT ${wrapper_output}
         COMMAND ${PYTHON_EXECUTABLE} -B
