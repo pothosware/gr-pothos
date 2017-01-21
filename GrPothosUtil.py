@@ -883,9 +883,7 @@ def main():
         factories=factories,
         meta_factories=meta_factories,
         registrations=registrations,
-        #FIXME having an issue with POCO stringify and unicode chars
-        #just escape out the unicode escape for now to avoid issues...
-        blockDescs=dict([(desc['path'], json.dumps(desc).replace('\\u', '\\\\u')) for desc in blockDescs]),
+        blockDescs=dict([(desc['path'], json.dumps(desc)) for desc in blockDescs]),
     )
 
     #send output to file or stdout
