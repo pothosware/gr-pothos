@@ -351,6 +351,36 @@ def find_block_methods(classInfo):
             continue
         yield method
 
+def parse_nested(text, left=r'[(]', right=r'[)]', sep=r','):
+    """ Based on http://stackoverflow.com/a/17141899/190597 (falsetru) """
+    pat = r'({}|{}|{})'.format(left, right, sep)
+    tokens = re.split(pat, text)
+    stack = [[]]
+    for x in tokens:
+        if not x or re.match(sep, x): continue
+        if re.match(left, x):
+            stack[-1].append([])
+            stack.append(stack[-1][-1])
+        elif re.match(right, x):
+            stack.pop()
+            if not stack:
+                raise ValueError('error: opening bracket is missing')
+        else:
+            stack[-1].append(x)
+    if len(stack) > 1:
+        print(stack)
+        raise ValueError('error: closing bracket is missing')
+    return stack.pop()
+
+def flatten_nested(nested, sep=r','):
+    out = list()
+    for n in nested:
+        if isinstance(n, list) and out and not isinstance(out[-1], list):
+            out[-1] += '(%s)'%(sep.join(flatten_nested(n)))
+        else:
+            out.append(n)
+    return out
+
 def match_function_param_to_key(function, argno, param, grc_make, grc_callbacks, grc_params, isFactory):
 
     def strip_off_nonalnum(s):
@@ -362,13 +392,29 @@ def match_function_param_to_key(function, argno, param, grc_make, grc_callbacks,
 
     #look through the make for a call to this function and inspect its args
     if isFactory:
-        make_match = re.match('.*\((\$.*)\).*', grc_make)
-        if make_match:
-            make_args = make_match.groups()[0].split(',')
-            if len(make_args) > argno and '$' in make_args[argno]:
-                make_arg = make_args[argno].strip()
-                make_arg = make_arg.split('$')[1]
-                return strip_off_nonalnum(make_arg)
+        #strip the self.* method calls that show up on the lines after the factory
+        grc_make = '\n'.join([l for l in grc_make.splitlines() if not l.startswith('self.')])
+
+        #gather all of the function arguments that show up between parens
+        make_match = [x for x in parse_nested(grc_make) if isinstance(x, list)]
+
+        #take the longest set of arguments from the back
+        make_args = list()
+        for x in reversed(make_match):
+            x = flatten_nested(x)
+            if '#if' in str(x): continue #cant handle if/else/end in the args
+            if len(x) > len(make_args): make_args = x
+
+        #FIXME - block specific code is not ideal, can we do it in the blacklist?
+        #some pfb blocks have pythonic wrappers that add attenuation
+        #and its not actually in the C++ which is what we are looking at
+        if 'pfb' in grc_make: make_args = [x for x in make_args if x.strip() != '$atten']
+
+        #check the nth argument for a key match
+        if len(make_args) > argno and '$' in str(make_args[argno]):
+            make_arg = str(make_args[argno]).strip()
+            make_arg = make_arg.split('$')[1]
+            return strip_off_nonalnum(make_arg)
 
     #inspect callbacks for function matches to see if the param is the same
     if not isFactory:
@@ -846,6 +892,13 @@ def main():
     if out_path:
         if out_path == 'stdout': print(output)
         else: open(out_path, 'w').write(output)
+
+    #debug dumps of json blocks
+    '''
+    for desc in blockDescs:
+        name = desc['path'].replace('/', '_')[1:]
+        open(name + '.json', 'w').write(json.dumps(desc, indent=4))
+    '''
 
     #dump the log messages to file
     if options.log and LOG[0]:
