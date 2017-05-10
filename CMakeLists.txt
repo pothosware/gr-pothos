@@ -248,7 +248,7 @@ foreach (comp_name ${COMP_NAMES})
             ${${comp_name}_LIBRARY}
             ${GNURADIO_LIBRARIES}
             ${Boost_LIBRARIES}
-        DESTINATION blocks/gnuradio
+        DESTINATION gnuradio
     )
 
 endforeach (comp_name)
@@ -259,7 +259,7 @@ POTHOS_MODULE_UTIL(
     LIBRARIES
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}
-    DESTINATION blocks/gnuradio
+    DESTINATION gnuradio
 )
 
 message(STATUS "")
