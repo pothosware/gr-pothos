@@ -27,27 +27,12 @@ class GrPothosBlock;
 #include <gnuradio/basic_block.h>
 #include <gnuradio/block.h>
 #include <gnuradio/block_detail.h>
+#include <gnuradio/blocks/nop.h>
 #include "block_executor.h" //local copy of stock executor, missing from gr install
 #include "pothos_support.h" //misc utility functions
 #include <cmath>
 #include <cassert>
 #include <iostream>
-
-/***********************************************************************
- * Dummy block to store produced messages
- **********************************************************************/
-class MsgAcceptBlock : public gr::block
-{
-public:
-    MsgAcceptBlock(const std::string &name):
-        gr::block(
-            "MsgAcceptBlock["+name+"]",
-            gr::io_signature::make(0, 0, 0),
-            gr::io_signature::make(0, 0, 0))
-    {
-        return;
-    }
-};
 
 /***********************************************************************
  * GrPothosBlock interfaces a gr::basic_block to the Pothos framework
@@ -189,7 +174,7 @@ void GrPothosBlock::activate(void)
     }
 
     //subscribe the dummy message acceptor block to hold output messages
-    d_msg_accept_block.reset(new MsgAcceptBlock(d_block->name()));
+    d_msg_accept_block = gr::blocks::nop::make(1);
     pmt::pmt_t msg_ports_out = d_block->message_ports_out();
     for (size_t i = 0; i < pmt::length(msg_ports_out); i++)
     {
