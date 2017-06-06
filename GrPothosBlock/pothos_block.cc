@@ -281,7 +281,7 @@ void GrPothosBlock::work(void)
     {
         const auto buff = d_detail->output(port->index());
         buff->d_base = port->buffer().as<char *>();
-        buff->d_bufsize = port->elements();
+        buff->d_bufsize = port->elements()+1; //+1 -> see buffer::space_available()
         buff->d_write_index = 0;
         buff->d_abs_write_offset = port->totalElements();
     }
