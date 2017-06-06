@@ -257,7 +257,7 @@ void GrPothosBlock::work(void)
         const auto buff = reader->buffer();
 
         buff->d_base = port->buffer().as<char *>();
-        buff->d_bufsize = port->elements();
+        buff->d_bufsize = port->elements()+1; //+1 -> see buffer::space_available()
         buff->d_write_index = port->elements();
         reader->d_read_index = 0;
         reader->d_abs_read_offset = port->totalElements();
