@@ -701,7 +701,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     if not categories: warning("Not block categories found: %s", className)
     categories = [c if c.startswith('/') else ('/'+c) for c in categories]
     #remove leading [Core] category name
-    categories = [c.replace('[Core]/', '') for c in categories]
+    categories = [c.replace('[Core]', 'GNURadio') for c in categories]
 
     factoryInfo = dict(
         namespace=classInfo['namespace'],
