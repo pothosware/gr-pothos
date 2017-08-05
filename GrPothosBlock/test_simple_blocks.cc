@@ -21,7 +21,9 @@
 
 #include <Pothos/Testing.hpp>
 #include <Pothos/Framework.hpp>
-#include <Poco/JSON/Object.h>
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_stream)
 {
@@ -35,10 +37,10 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_stream)
     topology.connect(copy, 0, collector, 0);
 
     //create a test plan for a stream with random labels
-    Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-    testPlan->set("enableBuffers", true);
-    testPlan->set("enableLabels", true);
-    auto expected = feeder.callProxy("feedTestPlan", testPlan);
+    json testPlan;
+    testPlan["enableBuffers"] = true;
+    testPlan["enableLabels"] = true;
+    auto expected = feeder.callProxy("feedTestPlan", testPlan.dump());
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
     collector.callVoid("verifyTestPlan", expected);
@@ -56,10 +58,10 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_packets)
     topology.connect(copy, "pdus", collector, 0);
 
     //create a test plan for packets
-    Poco::JSON::Object::Ptr testPlan(new Poco::JSON::Object());
-    testPlan->set("enablePackets", true);
-    testPlan->set("enableLabels", true);
-    auto expected = feeder.callProxy("feedTestPlan", testPlan);
+    json testPlan;
+    testPlan["enablePackets"] = true;
+    testPlan["enableLabels"] = true;
+    auto expected = feeder.callProxy("feedTestPlan", testPlan.dump());
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
     collector.callVoid("verifyTestPlan", expected);

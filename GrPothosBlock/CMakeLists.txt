@@ -23,6 +23,16 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 #the block_executor may use an extra field
 add_definitions(-DGR_PERFORMANCE_COUNTERS)
 
+#enable testing - due to API changes we require json.hpp
+#and Pothos 0.6 for changes in the unit test blocks
+find_path(JSON_HPP_INCLUDE_DIR NAMES json.hpp PATH_SUFFIXES nlohmann)
+if (JSON_HPP_INCLUDE_DIR AND NOT "${Pothos_VERSION}" VERSION_LESS "0.6.0")
+    include_directories(${JSON_HPP_INCLUDE_DIR})
+    list(APPEND test_sources test_simple_blocks.cc)
+else()
+    message(WARNING "Block tests disabled (require Pothos>=0.6.0 and json.hpp")
+endif()
+
 POTHOS_MODULE_UTIL(
     TARGET GrPothosBlock
     SOURCES
@@ -30,7 +40,7 @@ POTHOS_MODULE_UTIL(
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
         test_pmt_helper.cc
-        test_simple_blocks.cc
+        ${test_sources}
     LIBRARIES
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}
