@@ -1,5 +1,11 @@
 This this the changelog file for the GrPothos toolkit.
 
+Release 0.2.0 (pending)
+==========================
+
+- Blocks unit test required json.hpp and Pothos 0.6.0
+  Unit test is optional for backwards compatibility.
+
 Release 0.1.0 (2017-08-05)
 ==========================
 
