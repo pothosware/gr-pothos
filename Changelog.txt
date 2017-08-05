@@ -1,0 +1,6 @@
+This this the changelog file for the GrPothos toolkit.
+
+Release 0.1.0 (2017-08-05)
+==========================
+
+This is the first public release of the GrPothos toolkit.
