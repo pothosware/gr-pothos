@@ -40,10 +40,10 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_stream)
     json testPlan;
     testPlan["enableBuffers"] = true;
     testPlan["enableLabels"] = true;
-    auto expected = feeder.callProxy("feedTestPlan", testPlan.dump());
+    auto expected = feeder.call("feedTestPlan", testPlan.dump());
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
-    collector.callVoid("verifyTestPlan", expected);
+    collector.call("verifyTestPlan", expected);
 }
 
 POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_packets)
@@ -61,8 +61,8 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_packets)
     json testPlan;
     testPlan["enablePackets"] = true;
     testPlan["enableLabels"] = true;
-    auto expected = feeder.callProxy("feedTestPlan", testPlan.dump());
+    auto expected = feeder.call("feedTestPlan", testPlan.dump());
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
-    collector.callVoid("verifyTestPlan", expected);
+    collector.call("verifyTestPlan", expected);
 }
