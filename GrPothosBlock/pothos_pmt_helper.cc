@@ -154,7 +154,7 @@ pmt::pmt_t obj_to_pmt(const Pothos::Object &obj)
     if (obj.type() == typeid(pmt::pmt_t)) return obj.extract<pmt::pmt_t>();
 
     //backup plan... boost::any
-    return pmt::make_any(obj);
+    return pmt::make_any(boost::any(obj));
 }
 
 struct SharedPMTHolder
