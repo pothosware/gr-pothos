@@ -458,6 +458,11 @@ def evalToJSON(opt):
     #just quote the value
     return '"%s"'%opt
 
+def evalToJSONStr(opt):
+    val = evalToJSON(opt)
+    if isinstance(val, str): return val
+    return json.dumps(val)
+
 def fromGrcParam(grc_param):
     param_d = dict(key=grc_param['key'])
     param_type = grc_param['type']
@@ -510,7 +515,7 @@ def fromGrcParam(grc_param):
 
     #generic combo-box style entry
     if options:
-        param_d['options'] = [dict(name=o['name'], value=evalToJSON(o['key'])) for o in options]
+        param_d['options'] = [dict(name=o['name'], value=evalToJSONStr(o['key'])) for o in options]
         param_d['widgetType'] = 'ComboBox'
         param_d['widgetKwargs'] = dict(editable=param_type != 'enum')
 
