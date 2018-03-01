@@ -882,12 +882,13 @@ def main():
     notice('%s: Total registrations    %d', options.target, len(registrations))
 
     #generate output source
+    sort_by_name = lambda l: sorted(l, key=lambda e: e['name'])
     output = classInfoIntoRegistration(
-        headers=set(headers+ENUM_HEADERS),
-        enums=DISCOVERED_ENUMS,
-        factories=factories,
-        meta_factories=meta_factories,
-        registrations=registrations,
+        headers=sorted(set(headers+ENUM_HEADERS)),
+        enums=sort_by_name(DISCOVERED_ENUMS),
+        factories=sort_by_name(factories),
+        meta_factories=sort_by_name(meta_factories),
+        registrations=sort_by_name(registrations),
         blockDescs=dict([(desc['path'], json.dumps(desc)) for desc in blockDescs]),
     )
 
