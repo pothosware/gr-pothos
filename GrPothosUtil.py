@@ -313,7 +313,9 @@ def doxygenToDocLines(doxygen):
 ########################################################################
 from collections import OrderedDict
 import re
-MAX_ARGS = 8
+
+#was 8 for MSVC issues (_VARIADIC_MAX), which should be fixed in 2013 and up
+MAX_ARGS = 32 #lets be reasonable...
 
 def create_block_path(className, classInfo):
     ns = classInfo['namespace']

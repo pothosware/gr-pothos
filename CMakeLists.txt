@@ -114,7 +114,6 @@ endif()
 
 if(MSVC)
     add_definitions(/bigobj) #very large generated files
-    add_definitions(-D_VARIADIC_MAX=10) #for function binding
     add_definitions(/MP) #multi-core build
 endif(MSVC)
 
