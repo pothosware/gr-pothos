@@ -148,7 +148,7 @@ def inspect_header(header_path):
 
     if cppHeader.enums:
         ENUM_HEADERS.append(header_path)
-        DISCOVERED_ENUMS.extend(map(AttributeDict, cppHeader.enums))
+        DISCOVERED_ENUMS.extend(list(map(AttributeDict, cppHeader.enums)))
 
     return header_path, cppHeader
 
@@ -158,7 +158,7 @@ def gather_header_data(tree_paths, glob='*.h'):
             yield inspect_header(os.path.abspath(header))
 
 def query_block_classes(cppHeader):
-    for className, classInfo in cppHeader.CLASSES.iteritems():
+    for className, classInfo in cppHeader.CLASSES.items():
         if not is_this_class_a_block(className, classInfo): continue
         #notice('  Found: %s::%s', classInfo['namespace'], className)
         yield (className, classInfo)
@@ -221,7 +221,7 @@ def grcCategoryRecurse(data, names=[]):
 
 def grcBlockKeyToCategoryMap(grc_data):
     key_to_categories = dict()
-    for file_name, data in grc_data.iteritems():
+    for file_name, data in grc_data.items():
         if 'cat' not in data: continue
         for blockKey, catNames in grcCategoryRecurse(data['cat']):
             catName = '/'.join(catNames)
@@ -427,7 +427,7 @@ def match_function_param_to_key(function, argno, param, grc_make, grc_callbacks,
         for callback in grc_callbacks:
             if function['name'] in callback:
                 guts = callback.split(function['name'], 1)[1]
-                args = map(strip_off_nonalnum, guts.split('$'))
+                args = list(map(strip_off_nonalnum, guts.split('$')))
                 if args and not args[0]: args = args[1:]
                 if len(args) == len(function['parameters']):
                     return args[argno]
@@ -506,16 +506,16 @@ def fromGrcParam(grc_param):
 
         #only use the spinbox when the default value is int-parsable
         #we dont use spinbox for hex values and default expressions
-        if grc_param.has_key('value'):
+        if 'value' in grc_param:
             try:
                 int(grc_param['value'])
                 param_d['widgetType'] = 'SpinBox'
             except Exception as ValueError: pass
 
-        if not param_d.has_key('default'): param_d['default'] = 0
+        if 'default' not in param_d: param_d['default'] = 0
 
     if param_type in ('string', 'file_open', 'file_save'):
-        if not param_d.has_key('default'): param_d['default'] = ""
+        if 'default' not in param_d: param_d['default'] = ""
         #must add quotes for the string-based values if the quotes are not present
         if not re.match('^".*"$', param_d['default']): param_d['default'] = '"%s"'%param_d['default']
 
@@ -584,7 +584,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
             continue
 
         #cant bind calls that use the const char * instead of std::string
-        if any(map(isConstCharStar, [p['type'] for p in method['parameters']])):
+        if any(list(map(isConstCharStar, [p['type'] for p in method['parameters']]))):
             warning('method %s::%s with "const char *" param is not supported', className, name)
             continue
 
@@ -862,7 +862,7 @@ def main():
                 #print traceback.format_exc()
 
     #determine meta-block grouping -- one file to many keys
-    for grc_file, info in grc_file_to_meta_group.iteritems():
+    for grc_file, info in grc_file_to_meta_group.items():
         if len(info) > 1:
             try:
                 metaFactory, metaBlockDesc = createMetaBlockInfo(grc_data, grc_file, info)

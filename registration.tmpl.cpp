@@ -106,7 +106,7 @@ ${enum.namespace}${enum.name} string_to_${enum.name}(const std::string &s)
 
 pothos_static_block(registerGrPothosUtilBlockDocs)
 {
-    % for path, blockDesc in blockDescs.iteritems():
+    % for path, blockDesc in blockDescs.items():
     <%
     escaped = ''.join([hex(ord(ch)).replace('0x', '\\x') for ch in blockDesc])
     %>
