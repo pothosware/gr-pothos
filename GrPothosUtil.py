@@ -27,6 +27,10 @@ def warning(msg, *args): sys.stderr.write(WARNING+msg%args+"\n"+ENDC);  LOG[0]+=
 def error(msg, *args): sys.stderr.write(FAIL+msg%args+"\n"+ENDC);       LOG[0]+="E: "+msg%args+"\n"
 def blacklist(msg, *args): sys.stderr.write(OKBLUE+msg%args+"\n"+ENDC); LOG[0]+="B: "+msg%args+"\n"
 
+class AttributeDict(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+
 ########################################################################
 ## blacklists -- hopefully we can fix in the future
 ########################################################################
@@ -144,7 +148,7 @@ def inspect_header(header_path):
 
     if cppHeader.enums:
         ENUM_HEADERS.append(header_path)
-        DISCOVERED_ENUMS.extend(cppHeader.enums)
+        DISCOVERED_ENUMS.extend(map(AttributeDict, cppHeader.enums))
 
     return header_path, cppHeader
 
@@ -163,11 +167,11 @@ def query_block_classes(cppHeader):
 ## class info into a C++ source
 ########################################################################
 REGISTRATION_TMPL_FILE = os.path.join(os.path.dirname(__file__), 'registration.tmpl.cpp')
-from Cheetah import Template
+from mako.template import Template
 
 def classInfoIntoRegistration(**kwargs):
     tmpl_str = open(REGISTRATION_TMPL_FILE, 'r').read()
-    return str(Template.Template(tmpl_str, kwargs))
+    return Template(tmpl_str).render(**kwargs)
 
 ########################################################################
 ## gather grc data
@@ -351,7 +355,7 @@ def find_block_methods(classInfo):
         if len(method['parameters']) > MAX_ARGS:
             warning("Too many parameters %s::%s ignored", classInfo['name'], method['name'])
             continue
-        yield method
+        yield AttributeDict(method)
 
 def parse_nested(text, left=r'[(]', right=r'[)]', sep=r','):
     """ Based on http://stackoverflow.com/a/17141899/190597 (falsetru) """
@@ -710,7 +714,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     #remove leading [Core] category name
     categories = [c.replace('[Core]', 'GNURadio') for c in categories]
 
-    factoryInfo = dict(
+    factoryInfo = AttributeDict(
         namespace=classInfo['namespace'],
         className=className,
         used_factory_parameters=used_factory_parameters,
@@ -777,13 +781,13 @@ def createMetaBlockInfo(grc_data, grc_file, info):
     for factory, blockDesc in info:
         namespace = factory['namespace']
         internal_factory_args = ['a%d.convert<%s>()'%(i, stripConstRef(p['type'])) for i, p in enumerate(factory['used_factory_parameters'])]
-        sub_factories.append(dict(
+        sub_factories.append(AttributeDict(
             name=factory['name'], internal_factory_args=', '.join(internal_factory_args)))
 
     #create metafactory
     metaFactoryArgs = ['const std::string &%s'%param_d['key']]
     metaFactoryArgs += ['const Pothos::Object &a%d'%i for i in range(len(metaBlockDesc['args'])-1)]
-    metaFactory = dict(
+    metaFactory = AttributeDict(
         type_key=param_d['key'],
         name=grc_file,
         path=metaBlockDesc['path'],
