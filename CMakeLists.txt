@@ -36,6 +36,11 @@ if (NOT PYTHONINTERP_FOUND)
 endif()
 message(STATUS "PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+include(FindPythonModule)
+find_python_module(ply REQUIRED)
+find_python_module(mako REQUIRED)
+
 ########################################################################
 # Setup gnuradio dependency
 ########################################################################
