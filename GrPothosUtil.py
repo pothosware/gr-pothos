@@ -127,7 +127,7 @@ def is_this_class_a_block(className, classInfo):
 
 def inspect_header(header_path):
     #notice('Inspecting: %s', header_path)
-    contents = open(header_path).read()
+    contents = open(header_path, encoding="utf8").read()
 
     #remove API decl tokens so the lexer doesnt have to
     pp_tokens = list()
