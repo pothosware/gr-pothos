@@ -55,6 +55,7 @@ def glob_recurse(base, filt):
 ## single header inspection
 ########################################################################
 import sys
+import io
 import os
 sys.path.append(os.path.dirname(__file__))
 import CppHeaderParser
@@ -127,7 +128,7 @@ def is_this_class_a_block(className, classInfo):
 
 def inspect_header(header_path):
     #notice('Inspecting: %s', header_path)
-    contents = open(header_path, encoding="utf8").read()
+    contents = io.open(header_path, mode='r', encoding='utf-8').read()
 
     #remove API decl tokens so the lexer doesnt have to
     pp_tokens = list()
