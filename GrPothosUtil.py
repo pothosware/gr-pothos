@@ -538,7 +538,7 @@ def fromGrcParam(grc_param):
     return param_d
 
 def stripConstRef(t):
-    return t.replace('&', '').replace('const', '').strip()
+    return t.replace('const&', '').replace('&', '').replace('const ', '').strip()
 
 def isConstCharStar(typeStr):
     return typeStr.count('const') == 1 and typeStr.count('char') == 1 and typeStr.count('*') == 1
