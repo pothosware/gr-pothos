@@ -522,6 +522,8 @@ def fromGrcParam(grc_param):
 
     #generic combo-box style entry
     if options:
+        try: param_d['default'] = evalToJSONStr(grc_param['value'] or "") #handles None
+        except KeyError: pass
         param_d['options'] = [dict(name=o['name'], value=evalToJSONStr(o['key'])) for o in options]
         param_d['widgetType'] = 'ComboBox'
         param_d['widgetKwargs'] = dict(editable=param_type != 'enum')
