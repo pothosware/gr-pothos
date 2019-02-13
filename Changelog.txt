@@ -3,6 +3,8 @@ This this the changelog file for the GrPothos toolkit.
 Release 0.2.0 (pending)
 ==========================
 
+- setting port alias can invoke optional ports
+
 - Blocks unit test required json.hpp and Pothos 0.6.0
   Unit test is optional for backwards compatibility.
 

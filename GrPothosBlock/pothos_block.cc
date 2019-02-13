@@ -137,11 +137,21 @@ void GrPothosBlock::__setNumOutputs(const size_t num)
 
 void GrPothosBlock::__setInputAlias(const std::string &name, const std::string &alias)
 {
+    //setting the alias from the block description evaluator can invoke optional ports
+    size_t idx(0);
+    size_t i = std::stoul(name, &idx);
+    if (idx == name.size()) __setNumInputs(i+1);
+
     this->input(name)->setAlias(alias);
 }
 
 void GrPothosBlock::__setOutputAlias(const std::string &name, const std::string &alias)
 {
+    //setting the alias from the block description evaluator can invoke optional ports
+    size_t idx(0);
+    size_t i = std::stoul(name, &idx);
+    if (idx == name.size()) __setNumOutputs(i+1);
+
     this->output(name)->setAlias(alias);
 }
 
