@@ -463,7 +463,7 @@ def evalToJSON(opt):
     m = re.match('pmt\.\w+\((.+)\)', opt)
     if m: return m.groups()[0]
     #just quote the value
-    return '"%s"'%opt
+    return '"%s"'%str(opt)
 
 def evalToJSONStr(opt):
     val = evalToJSON(opt)
