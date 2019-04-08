@@ -151,6 +151,14 @@ def inspect_header(header_path):
         ENUM_HEADERS.append(header_path)
         DISCOVERED_ENUMS.extend(list(map(AttributeDict, cppHeader.enums)))
 
+    for cls in cppHeader.CLASSES.values():
+        class_enums = cls['enums']['public']
+        if class_enums: ENUM_HEADERS.append(header_path)
+        for enum in class_enums:
+            enum = AttributeDict(enum)
+            enum.namespace += "::"+cls['name']+"::"
+            DISCOVERED_ENUMS.append(enum)
+
     return header_path, cppHeader
 
 def gather_header_data(tree_paths, glob='*.h'):

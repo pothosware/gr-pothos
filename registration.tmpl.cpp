@@ -113,7 +113,7 @@ pothos_static_block(registerGrPothosUtilBlockDocs)
     Pothos::PluginRegistry::add("/blocks/docs${path}", std::string("${escaped}"));
     % endfor
     % for enum in enums:
-    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_${enum.name}", Pothos::Callable(&int_to_${enum.name}));
-    Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_${enum.name}", Pothos::Callable(&string_to_${enum.name}));
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_${enum.namespace.replace('::', '_')}${enum.name}", Pothos::Callable(&int_to_${enum.name}));
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_${enum.namespace.replace('::', '_')}${enum.name}", Pothos::Callable(&string_to_${enum.name}));
     % endfor
 }
