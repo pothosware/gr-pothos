@@ -453,6 +453,7 @@ def get_as_list(data, key):
     return out
 
 def evalToJSON(opt):
+    opt = str(opt) #unicode->str type in python2.x
     #support native booleans
     if opt == "True": return True
     if opt == "False": return False
