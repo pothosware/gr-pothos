@@ -538,7 +538,7 @@ def fromGrcParam(grc_param):
         param_d['widgetKwargs'] = dict(editable=param_type != 'enum')
 
     #support dtype widget entry
-    optsHaveSize = opts and len(opts[0])==1 and opts[0][0].startswith('size')
+    optsHaveSize = opts and len(opts[0])==1 and (opts[0][0].startswith('size') or opts[0][0].startswith('itemsize'))
     if param_type == 'enum' and optsHaveSize and 'type' in grc_param['key']:
         del param_d['options']
         param_d['default'] = '"complex64"'
