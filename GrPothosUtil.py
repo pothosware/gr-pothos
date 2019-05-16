@@ -564,6 +564,12 @@ def splitFactoryParam(factory_param):
         typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
         argPass = argName + ".c_str()"
 
+    #handle one-off case for zmq blocks that use non-const char * for strings
+    #this should be fixed in gnuradio upstream
+    elif 'const' not in typeStr and typeStr.count('char') == 1 and typeStr.count('*') == 1 and argName == "address":
+        typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
+        argPass = "(char *)" + argName + ".c_str()"
+
     #return c++ type, name of the argument, and code to pass into the factory
     return typeStr, argName, argPass
 
