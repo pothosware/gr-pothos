@@ -245,6 +245,10 @@ foreach (comp_name ${COMP_NAMES})
             ${grc_blocks}
     )
 
+    if ("${comp_name}" STREQUAL "trellis")
+        list(APPEND wrapper_output gr_trellis_fsm.cc)
+    endif()
+
     POTHOS_MODULE_UTIL(
         TARGET ${comp_name}Support
         SOURCES ${wrapper_output}
