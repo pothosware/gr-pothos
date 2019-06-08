@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Free Software Foundation, Inc.
+ * Copyright 2014-2019 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -63,6 +63,7 @@ private:
     boost::shared_ptr<gr::block> d_block;
     gr::block_executor *d_exec;
     gr::block_detail_sptr d_detail;
+    gr_vector_int d_ninput_items_required;
     std::map<pmt::pmt_t, Pothos::InputPort *> d_in_msg_ports;
     std::map<pmt::pmt_t, Pothos::OutputPort *> d_out_msg_ports;
 };
@@ -163,6 +164,7 @@ void GrPothosBlock::activate(void)
     //create block detail to handle produce/consume, totals, and tags
     d_detail = gr::make_block_detail(this->inputs().size(), this->outputs().size());
     d_block->set_detail(d_detail);
+    d_ninput_items_required.resize(d_detail->ninputs());
 
     //pick a small default that will successfully allocate
     //the actual size is filled in later inside of work()
@@ -249,10 +251,19 @@ void GrPothosBlock::work(void)
     size_t reserve = d_block->history();
     if (d_block->fixed_rate())
     {
-        const size_t noutput_items = d_block->output_multiple_set()?d_block->output_multiple():1;
-        reserve = d_block->fixed_rate_noutput_to_ninput(noutput_items);
+        reserve = d_block->fixed_rate_noutput_to_ninput(d_block->output_multiple());
+        for (auto input : Pothos::Block::inputs()) input->setReserve(reserve);
     }
-    for (auto input : Pothos::Block::inputs()) input->setReserve(reserve);
+    else
+    {
+        //check forecast for the amount of input required to produce one output
+        //reserve will be the worst case of forecast vs the advertised history
+        d_block->forecast(d_block->output_multiple(), d_ninput_items_required);
+        for (size_t i = 0; i < size_t(d_detail->ninputs()); i++)
+        {
+            this->input(i)->setReserve(std::max(reserve, size_t(d_ninput_items_required[i])));
+        }
+    }
 
     //check that input and output items meets the reserve req
     const auto &workInfo = Pothos::Block::workInfo();
