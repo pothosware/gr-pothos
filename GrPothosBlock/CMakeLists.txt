@@ -13,7 +13,7 @@ foreach(header "buffer.h" "basic_block.h")
     set(header_contents "${header_contents}\n${_header_contents}")
 endforeach(header)
 
-string(REPLACE "  };" "    friend class ::GrPothosBlock;\n  };" header_contents "${header_contents}")
+string(REPLACE "friend class" "friend class ::GrPothosBlock;\n    friend class" header_contents "${header_contents}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gr_pothos_access.h" "${header_contents}")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
