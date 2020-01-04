@@ -242,19 +242,20 @@ def grcBlockKeyToCategoryMap(grc_data):
 ########################################################################
 ## doxygen to qt html
 ########################################################################
-import cgi
+try: from cgi import escape
+except: from html import escape
 
 def doxygenToDocLines(doxygen):
     in_unordered_list = False
     in_xmlonly = False
 
     for doxyline in doxygen.splitlines():
-        doxyline = cgi.escape(doxyline)
+        doxyline = escape(doxyline)
 
         #supported html tags
         for tag in "A B BLOCKQUOTE BR CENTER CAPTION CODE DD DFN DIV DL DT EM HR H1 H2 H3 H4 H5 H6 I IMG LI OL P PRE SMALL SPAN STRONG SUB SUP TABLE TD TH TR TT KBD UL VAR".split():
             for tmpl in ['<%s>', '</%s>']:
-                doxyline = doxyline.replace(cgi.escape(tmpl%tag.upper()), tmpl%tag.lower())
+                doxyline = doxyline.replace(escape(tmpl%tag.upper()), tmpl%tag.lower())
 
         #strip the front comment chars
         def front_strip(line, key):
