@@ -4,16 +4,27 @@
 # This module contains a Pothos::Block which can wrap a gr::block
 ########################################################################
 
+# This will already be included in the GNURADIO_LIBRARIES CMake variable,
+# but we need to look for it here to recreate the #define needed to enable logging.
+find_package(Log4cpp)
+if(LOG4CPP_FOUND)
+    add_definitions(-DENABLE_GR_LOG -DHAVE_LOG4CPP)
+    set(appender_sources
+        pothos_log4cpp_appender.cc
+        test_logging.cc
+    )
+endif()
+
 #create headers to extend friend access to the GrPothosBlock() class
 #buffer.h: Allow access to buffer members to point to a custom location
 #basic_block.h: Allow access to has_msg_handler and dispatch_msg
 unset(header_contents)
-foreach(header "buffer.h" "basic_block.h")
+foreach(header "buffer.h" "basic_block.h" "block.h")
     file(READ "${GR_INCLUDE_ROOT}/${header}" _header_contents)
     set(header_contents "${header_contents}\n${_header_contents}")
 endforeach(header)
 
-string(REPLACE "friend class" "friend class ::GrPothosBlock;\n    friend class" header_contents "${header_contents}")
+string(REPLACE "public:" "public:\n    friend class ::GrPothosBlock;" header_contents "${header_contents}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gr_pothos_access.h" "${header_contents}")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -40,6 +51,7 @@ POTHOS_MODULE_UTIL(
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
         test_pmt_helper.cc
+        ${appender_sources}
         ${test_sources}
     LIBRARIES
         ${GNURADIO_LIBRARIES}
