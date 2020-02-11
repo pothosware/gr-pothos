@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Free Software Foundation, Inc.
+ * Copyright 2014-2017,2020 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -21,7 +21,9 @@
 
 #include "pothos_support.h"
 #include <Pothos/Object.hpp>
+#include <Pothos/Framework/BufferChunk.hpp>
 #include <Pothos/Framework/Packet.hpp>
+#include <Poco/Format.h>
 #include <Poco/Types.h> //POCO_LONG_IS_64_BIT
 #include <cstdint>
 #include <utility>
@@ -150,6 +152,14 @@ pmt::pmt_t obj_to_pmt(const Pothos::Object &obj)
         return l;
     }
 
+    // blobs
+    if (obj.type() == typeid(Pothos::BufferChunk))
+    {
+        const auto& bufferChunk = obj.extract<Pothos::BufferChunk>();
+
+        return pmt::make_blob(bufferChunk.as<const void *>(), bufferChunk.length);
+    }
+
     //is it already a pmt?
     if (obj.type() == typeid(pmt::pmt_t)) return obj.extract<pmt::pmt_t>();
 
@@ -239,6 +249,19 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
 
     //skipping tuples -- not really used
 
+    // blobs
+    if (pmt::is_blob(p))
+    {
+        auto sharedBuff = Pothos::SharedBuffer(
+                              reinterpret_cast<size_t>(pmt::blob_data(p)),
+                              pmt::blob_length(p),
+                              std::make_shared<SharedPMTHolder>(p));
+        auto bufferChunk = Pothos::BufferChunk(sharedBuff);
+        bufferChunk.dtype = Pothos::DType(typeid(unsigned char));
+
+        return Pothos::Object(bufferChunk);
+    }
+
     //vector container
     if (pmt::is_vector(p))
     {
@@ -300,12 +323,71 @@ Pothos::Object pmt_to_obj(const pmt::pmt_t &p)
 #include <Pothos/Plugin.hpp>
 #include <Pothos/Callable.hpp>
 
+// Use these functions to make direct conversions easier.
+
+template <typename T>
+static pmt::pmt_t convert_to_pmt(const T& input)
+{
+    return obj_to_pmt(Pothos::Object(input));
+}
+
+template <typename T>
+static T convert_from_pmt(const pmt::pmt_t& pmt)
+{
+    return pmt_to_obj(pmt).extract<T>();
+}
+
+template <typename T>
+static void register_converter_pair(const std::string& name)
+{
+    Pothos::PluginRegistry::add(
+        Poco::format("/object/convert/gr/%s_to_pmt", name),
+        Pothos::Callable(&convert_to_pmt<T>));
+    Pothos::PluginRegistry::add(
+        Poco::format("/object/convert/gr/%s_from_pmt", name),
+        Pothos::Callable(&convert_from_pmt<T>));
+}
+
 pothos_static_block(pothosObjectRegisterPMTSupport)
 {
+    // Note: don't add the reverse casts (pmt::to_bool, etc). This causes other primitive types to try
+    // converting through these PMT functions, resulting in exceptions.
     Pothos::PluginRegistry::add("/object/convert/gr/bool_to_pmt", Pothos::Callable(&pmt::from_bool));
     Pothos::PluginRegistry::add("/object/convert/gr/string_to_pmt", Pothos::Callable(&pmt::string_to_symbol));
     Pothos::PluginRegistry::add("/object/convert/gr/long_to_pmt", Pothos::Callable(&pmt::from_long));
     Pothos::PluginRegistry::add("/object/convert/gr/uint64_to_pmt", Pothos::Callable(&pmt::from_uint64));
+    Pothos::PluginRegistry::add("/object/convert/gr/float_to_pmt", Pothos::Callable(&pmt::from_float));
     Pothos::PluginRegistry::add("/object/convert/gr/double_to_pmt", Pothos::Callable(&pmt::from_double));
     Pothos::PluginRegistry::add("/object/convert/gr/complex_to_pmt", Pothos::Callable::make<pmt::pmt_t, const std::complex<double> &>(&pmt::from_complex));
+
+    // Object containers
+    // Note: PMT -> std::set is not currently supported.
+    register_converter_pair<Pothos::ObjectVector>("object_vector");
+    register_converter_pair<Pothos::ObjectMap>("object_map");
+    Pothos::PluginRegistry::add("/object/convert/gr/object_set_to_pmt", Pothos::Callable(&convert_to_pmt<Pothos::ObjectSet>));
+
+    // Numeric vectors
+    register_converter_pair<std::vector<char>>("char_vector");
+    
+    register_converter_pair<std::vector<std::int8_t>>("schar_vector");
+    register_converter_pair<std::vector<std::int16_t>>("sshort_vector");
+    register_converter_pair<std::vector<std::int32_t>>("sint_vector");
+    register_converter_pair<std::vector<long>>("slong_vector");
+    register_converter_pair<std::vector<long long>>("sllong_vector");
+
+    // TODO: why does this try and convert from a PMT to a BufferChunk?
+    //register_converter_pair<std::vector<std::uint8_t>>("uchar_vector");
+
+    register_converter_pair<std::vector<std::uint16_t>>("ushort_vector");
+    register_converter_pair<std::vector<std::uint32_t>>("uint_vector");
+    register_converter_pair<std::vector<unsigned long>>("ulong_vector");
+    register_converter_pair<std::vector<unsigned long long>>("ullong_vector");
+
+    register_converter_pair<std::vector<float>>("float_vector");
+    register_converter_pair<std::vector<double>>("double_vector");
+    register_converter_pair<std::vector<std::complex<float>>>("cfloat_vector");
+    register_converter_pair<std::vector<std::complex<double>>>("cdouble_vector");
+
+    // Other
+    register_converter_pair<Pothos::BufferChunk>("bufferchunk");
 }
