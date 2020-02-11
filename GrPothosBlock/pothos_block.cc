@@ -28,11 +28,16 @@ class GrPothosBlock;
 #include <gnuradio/block.h>
 #include <gnuradio/block_detail.h>
 #include <gnuradio/blocks/nop.h>
+#include <gnuradio/logger.h>
 #include "block_executor.h" //local copy of stock executor, missing from gr install
 #include "pothos_support.h" //misc utility functions
 #include <cmath>
 #include <cassert>
 #include <iostream>
+
+#ifdef ENABLE_GR_LOG
+#include "pothos_log4cpp_appender.h"
+#endif
 
 /***********************************************************************
  * GrPothosBlock interfaces a gr::basic_block to the Pothos framework
@@ -66,13 +71,18 @@ private:
     gr_vector_int d_ninput_items_required;
     std::map<pmt::pmt_t, Pothos::InputPort *> d_in_msg_ports;
     std::map<pmt::pmt_t, Pothos::OutputPort *> d_out_msg_ports;
+
+    PothosLog4CppAppender d_logger_appender;
+    PothosLog4CppAppender d_debug_logger_appender;
 };
 
 /***********************************************************************
  * init the name and ports -- called by the block constructor
  **********************************************************************/
 GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
-    d_block(block)
+    d_block(block),
+    d_logger_appender(d_block->name()),
+    d_debug_logger_appender(d_block->name())
 {
     Pothos::Block::setName(d_block->name());
 
@@ -106,6 +116,14 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
         auto port_id = pmt::vector_ref(msg_ports_out, i);
         d_out_msg_ports[port_id] = this->setupOutput(pmt::symbol_to_string(port_id));
     }
+
+#ifdef ENABLE_GR_LOG
+    // Direct block's logging into Poco's logging
+    d_block->d_logger->removeAllAppenders();
+    d_block->d_logger->setAppender(d_logger_appender);
+    d_block->d_debug_logger->removeAllAppenders();
+    d_block->d_debug_logger->setAppender(d_debug_logger_appender);
+#endif
 
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumInputs));
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumOutputs));
