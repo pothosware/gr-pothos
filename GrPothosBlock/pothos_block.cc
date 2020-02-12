@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 Free Software Foundation, Inc.
+ * Copyright 2014-2020 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -22,6 +22,7 @@
 class GrPothosBlock;
 
 #include <Pothos/Framework.hpp>
+#include <Pothos/Plugin.hpp>
 #include "gr_pothos_access.h" //include first for public access to members
 #include <gnuradio/buffer.h>
 #include <gnuradio/basic_block.h>
@@ -34,10 +35,7 @@ class GrPothosBlock;
 #include <cmath>
 #include <cassert>
 #include <iostream>
-
-#ifdef ENABLE_GR_LOG
-#include "pothos_log4cpp_appender.h"
-#endif
+#include <memory>
 
 /***********************************************************************
  * GrPothosBlock interfaces a gr::basic_block to the Pothos framework
@@ -71,18 +69,13 @@ private:
     gr_vector_int d_ninput_items_required;
     std::map<pmt::pmt_t, Pothos::InputPort *> d_in_msg_ports;
     std::map<pmt::pmt_t, Pothos::OutputPort *> d_out_msg_ports;
-
-    PothosLog4CppAppender d_logger_appender;
-    PothosLog4CppAppender d_debug_logger_appender;
 };
 
 /***********************************************************************
  * init the name and ports -- called by the block constructor
  **********************************************************************/
 GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
-    d_block(block),
-    d_logger_appender(d_block->name()),
-    d_debug_logger_appender(d_block->name())
+    d_block(block)
 {
     Pothos::Block::setName(d_block->name());
 
@@ -118,11 +111,11 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
     }
 
 #ifdef ENABLE_GR_LOG
-    // Direct block's logging into Poco's logging
+    // Avoid duplicate output by removing the block's appenders. This won't suppress
+    // logging during construction, but this will be logged by our "gr_log" and "gr_debug"
+    // loggers anyway, so we'll live.
     d_block->d_logger->removeAllAppenders();
-    d_block->d_logger->setAppender(d_logger_appender);
     d_block->d_debug_logger->removeAllAppenders();
-    d_block->d_debug_logger->setAppender(d_debug_logger_appender);
 #endif
 
     Pothos::Block::registerCall(this, POTHOS_FCN_TUPLE(GrPothosBlock, __setNumInputs));
@@ -403,3 +396,27 @@ Pothos::BufferManager::Sptr GrPothosBlock::getOutputBufferManager(const std::str
  **********************************************************************/
 static Pothos::BlockRegistry registerGrPothosBlock(
     "/gnuradio/block", &GrPothosBlock::make);
+
+/***********************************************************************
+ * All of GNU Radio's block loggers descend from either "gr_log" or
+ * "gr_debug", so add our appender here to catch any messages that are
+ * logged before we get to the blocks' loggers.
+ **********************************************************************/
+#ifdef ENABLE_GR_LOG
+#include "pothos_log4cpp_appender.h"
+
+pothos_static_block(setGnuRadioLog4CppAppenders)
+{
+    /*
+     * log4cpp::Category::addAppender can take either a pointer or a reference.
+     * Passing in a pointer transfers ownership to Log4Cpp, but for some reason,
+     * this results in a crash when Log4Cpp tears down its logger hierarchy, but
+     * references work just fine.
+     */
+    static auto grLogAppenderUptr = std::unique_ptr<PothosLog4CppAppender>(new PothosLog4CppAppender("gr_log"));
+    static auto grDebugAppenderUptr = std::unique_ptr<PothosLog4CppAppender>(new PothosLog4CppAppender("gr_debug"));
+
+    gr::logger_get_logger("gr_log")->addAppender(*grLogAppenderUptr);
+    gr::logger_get_logger("gr_debug")->addAppender(*grDebugAppenderUptr);
+}
+#endif
