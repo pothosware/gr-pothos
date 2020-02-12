@@ -31,15 +31,71 @@
 
 #include <gnuradio/block.h>
 
+#include <fstream>
 #include <vector>
 
-POTHOS_TEST_BLOCK("/gnuradio/tests", test_logging)
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_logging_in_block_ctor)
+{
+    const std::string loggerName = "gr_log";
+    const std::string errorMessage = "WARNING: File will not be fully consumed with the current output type";
+
+    // Add a channel to the relevant Poco logger to write the output
+    // to file. This will allow us to make sure output is written as
+    // expected.
+    const std::string logPath = Poco::TemporaryFile::tempName();
+    POTHOS_TEST_TRUE(!Poco::File(logPath).exists());
+    Poco::TemporaryFile::registerForDeletion(logPath);
+
+    auto& grBlockLogger = Poco::Logger::get(loggerName);
+    grBlockLogger.setChannel(new Poco::SimpleFileChannel(logPath));
+
+    // GNU Radio's file source logs a warning if the size of the file
+    // is incompatible with the type size.
+    const std::string testFile = Poco::TemporaryFile::tempName();
+    POTHOS_TEST_TRUE(!Poco::File(testFile).exists());
+    Poco::TemporaryFile::registerForDeletion(testFile);
+
+    const std::vector<std::uint8_t> threeBytesOfJunk = {1,2,3};
+    std::ofstream ofile(testFile.c_str(), std::ios::binary);
+    ofile.write(
+        reinterpret_cast<const char*>(threeBytesOfJunk.data()),
+        threeBytesOfJunk.size());
+    ofile.close();
+
+    auto fileSource = Pothos::BlockRegistry::make(
+                          "/gr/blocks/file_source",
+                          "float32",
+                          testFile,
+                          false /*repeat*/);
+    POTHOS_TEST_TRUE(Poco::File(logPath).exists());
+
+    // Get the contents of the log file.
+    std::string fileContents;
+    const auto fileSize = Poco::File(logPath).getSize();
+    fileContents.resize(fileSize);
+
+    std::fstream ifile(logPath.c_str(), std::ios::in);
+    ifile.read(const_cast<char*>(fileContents.c_str()), fileSize);
+    ifile.close();
+
+    const std::vector<std::string> expectedStrings =
+    {
+        loggerName,
+        errorMessage
+    };
+    for(const auto& expectedString: expectedStrings)
+    {
+        POTHOS_TEST_TRUE(std::string::npos != fileContents.find(expectedString));
+    }
+}
+
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_logging_in_block_work)
 {
     const std::vector<std::vector<float>> initialMatrix = {{1.0,0.0},{0.0,1.0}};
     const std::vector<std::vector<float>> invalidMatrix = {{1.0,0.0},{0.0,1.0},{0.0,1.0}};
 
     constexpr gr::block::tag_propagation_policy_t tagPropagationPolicy = gr::block::TPP_ALL_TO_ALL;
-    const std::string loggerName = "multiply_matrix_ff";
+    const std::string loggerName = "gr_log";
     const std::string errorMessage = "Attempted to set matrix with invalid dimensions.";
 
     // Add a channel to the relevant Poco logger to write the output
