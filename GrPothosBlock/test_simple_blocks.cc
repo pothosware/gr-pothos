@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Free Software Foundation, Inc.
+ * Copyright 2017,2020 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -65,4 +65,56 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_copy_packets)
     topology.commit();
     POTHOS_TEST_TRUE(topology.waitInactive());
     collector.call("verifyTestPlan", expected);
+}
+
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_getter_probes)
+{
+    constexpr float lo = 0.1;
+    constexpr float hi = 0.2;
+    constexpr float initialState = 0;
+
+    auto triggeredSignal = Pothos::BlockRegistry::make("/blocks/triggered_signal");
+    triggeredSignal.call("setActivateTrigger", true);
+
+    auto loSlotToMessage = Pothos::BlockRegistry::make("/blocks/slot_to_message", "lo");
+    auto hiSlotToMessage = Pothos::BlockRegistry::make("/blocks/slot_to_message", "hi");
+    auto lastStateSlotToMessage = Pothos::BlockRegistry::make("/blocks/slot_to_message", "lastState");
+
+    auto loCollectorSink = Pothos::BlockRegistry::make("/blocks/collector_sink", "float32");
+    auto hiCollectorSink = Pothos::BlockRegistry::make("/blocks/collector_sink", "float32");
+    auto lastStateCollectorSink = Pothos::BlockRegistry::make("/blocks/collector_sink", "float32");
+    
+    auto thresholdFF = Pothos::BlockRegistry::make("/gr/blocks/threshold_ff", lo, hi, initialState);
+
+    // Execute the topology.
+    {
+        Pothos::Topology topology;
+
+        topology.connect(triggeredSignal, "triggered", thresholdFF, "probe_lo");
+        topology.connect(thresholdFF, "lo_triggered", loSlotToMessage, "lo");
+        topology.connect(loSlotToMessage, 0, loCollectorSink, 0);
+    
+        topology.connect(triggeredSignal, "triggered", thresholdFF, "probe_hi");
+        topology.connect(thresholdFF, "hi_triggered", hiSlotToMessage, "hi");
+        topology.connect(hiSlotToMessage, 0, hiCollectorSink, 0);
+
+        topology.connect(triggeredSignal, "triggered", thresholdFF, "probe_last_state");
+        topology.connect(thresholdFF, "last_state_triggered", lastStateSlotToMessage, "lastState");
+        topology.connect(lastStateSlotToMessage, 0, lastStateCollectorSink, 0);
+
+        topology.commit();
+        POTHOS_TEST_TRUE(topology.waitInactive());
+    }
+
+    auto loCollectorMessages = loCollectorSink.call<Pothos::ObjectVector>("getMessages");
+    POTHOS_TEST_EQUAL(1, loCollectorMessages.size());
+    POTHOS_TEST_EQUAL(lo, loCollectorMessages[0].convert<float>())
+
+    auto hiCollectorMessages = hiCollectorSink.call<Pothos::ObjectVector>("getMessages");
+    POTHOS_TEST_EQUAL(1, hiCollectorMessages.size());
+    POTHOS_TEST_EQUAL(hi, hiCollectorMessages[0].convert<float>())
+
+    auto lastStateCollectorMessages = lastStateCollectorSink.call<Pothos::ObjectVector>("getMessages");
+    POTHOS_TEST_EQUAL(1, lastStateCollectorMessages.size());
+    POTHOS_TEST_EQUAL(initialState, lastStateCollectorMessages[0].convert<float>())
 }

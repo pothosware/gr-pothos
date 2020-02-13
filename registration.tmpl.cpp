@@ -43,6 +43,9 @@ std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_facto
     % endif
     % for method in factory.block_methods:
     __pothos_block->registerCallable("${method.name}", Pothos::Callable(&${factory.namespace}::${factory.className}::${method.name}).bind(__orig_block_ref, 0));
+    % if not method.parameters and method.name not in ["start", "stop"]:
+    __pothos_block->registerProbe("${method.name}", "${method.name}_triggered", "probe_${method.name}");
+    %endif
     % endfor
     return __pothos_block;
 }
