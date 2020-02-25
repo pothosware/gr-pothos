@@ -225,6 +225,7 @@ add_subdirectory(GrPothosBlock)
 ########################################################################
 # Build modules
 ########################################################################
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 foreach (comp_name ${COMP_NAMES})
 
     set(doc_sources "")
@@ -255,6 +256,11 @@ foreach (comp_name ${COMP_NAMES})
             ${grc_blocks}
     )
 
+    if ("${comp_name}" STREQUAL "analog")
+        list(APPEND doc_sources analog/am_demod.cc)
+        list(APPEND wrapper_output
+            analog/am_demod.cc)
+    endif()
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND wrapper_output
             fec/generic_decoder.cc
@@ -262,7 +268,6 @@ foreach (comp_name ${COMP_NAMES})
             fec/mtrx.cc
         )
     endif()
-
     if ("${comp_name}" STREQUAL "filter")
         list(APPEND doc_sources filter/optfirdes.cc)
         list(APPEND wrapper_output
