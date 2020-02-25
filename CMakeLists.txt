@@ -259,9 +259,11 @@ foreach (comp_name ${COMP_NAMES})
     if ("${comp_name}" STREQUAL "analog")
         list(APPEND doc_sources
             analog/am_demod.cc
+            analog/fm_demod.cc
             analog/fm_emph.cc)
         list(APPEND wrapper_output
             analog/am_demod.cc
+            analog/fm_demod.cc
             analog/fm_emph.cc)
     endif()
     if ("${comp_name}" STREQUAL "fec")

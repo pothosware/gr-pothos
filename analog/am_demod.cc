@@ -28,6 +28,8 @@
 // Ported from: gr-analog/python/am_demod.py
 //
 
+// TODO: getters, setters
+
 class am_demod_cf: public Pothos::Topology
 {
 public:
