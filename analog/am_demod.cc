@@ -32,17 +32,15 @@ class am_demod_cf: public Pothos::Topology
 {
 public:
     Pothos::Topology* make(
-        const Pothos::ProxyEnvironment::Sptr& remote_env,
         int channel_rate,
         int audio_decim,
         float audio_pass,
         float audio_stop)
     {
-        return new am_demod_cf(remote_env, channel_rate, audio_decim, audio_pass, audio_stop);
+        return new am_demod_cf(channel_rate, audio_decim, audio_pass, audio_stop);
     }
     
     am_demod_cf(
-        const Pothos::ProxyEnvironment::Sptr& remote_env,
         int channel_rate,
         int audio_decim,
         float audio_pass,
@@ -54,11 +52,10 @@ public:
         d_audio_pass(audio_pass),
         d_audio_stop(audio_stop)
     {
-        auto block_registry = remote_env->findProxy("/Pothos/BlockRegistry");
-        d_complex_to_mag = block_registry.call("/gr/blocks/complex_to_mag", 1 /*vlen*/);
-        d_add_const_ff = block_registry.call("/gr/blocks/add_const", "add_const_ff", -1.0f);
-        d_optfir_designer = block_registry.call("/gr/filter/optimal_fir_designer");
-        d_fir_filter_fff = block_registry.call("/gr/filter/fir_filter_fff", d_audio_decim, std::vector<float>());
+        d_complex_to_mag = Pothos::BlockRegistry::make("/gr/blocks/complex_to_mag", 1 /*vlen*/);
+        d_add_const_ff = Pothos::BlockRegistry::make("/gr/blocks/add_const", "add_const_ff", -1.0f);
+        d_optfir_designer = Pothos::BlockRegistry::make("/gr/filter/optimal_fir_designer");
+        d_fir_filter_fff = Pothos::BlockRegistry::make("/gr/filter/fir_filter_fff", d_audio_decim, std::vector<float>());
         
         this->connect(this, 0, d_complex_to_mag, 0);
         this->connect(d_complex_to_mag, 0, d_add_const_ff, 0);
@@ -92,19 +89,17 @@ class demod_10k0a3e_cf: public am_demod_cf
 {
 public:
     Pothos::Topology* make(
-        const Pothos::ProxyEnvironment::Sptr& remote_env,
         int channel_rate,
         int audio_decim)
     {
-        return new demod_10k0a3e_cf(remote_env, channel_rate, audio_decim);
+        return new demod_10k0a3e_cf(channel_rate, audio_decim);
     }
 
     demod_10k0a3e_cf(
-        const Pothos::ProxyEnvironment::Sptr& remote_env,
         int channel_rate,
         int audio_decim
     ):
-        am_demod_cf(remote_env, channel_rate, audio_decim, 5000, 5500)
+        am_demod_cf(channel_rate, audio_decim, 5000, 5500)
     {
     }
 };
@@ -142,7 +137,7 @@ public:
  * |default 5500.0
  * |preview enable
  *
- * |factory /gr/analog/am_demod_cf(remote_env,channel_rate,audio_decim,audio_pass,audio_stop)
+ * |factory /gr/analog/am_demod_cf(channel_rate,audio_decim,audio_pass,audio_stop)
  **********************************************************************/
 static Pothos::BlockRegistry registerAmDemod(
     "/gr/analog/am_demod_cf",
@@ -168,7 +163,7 @@ static Pothos::BlockRegistry registerAmDemod(
  * |default 1
  * |preview enable
  *
- * |factory /gr/analog/demod_10k0a3e_cf(remote_env,channel_rate,audio_decim)
+ * |factory /gr/analog/demod_10k0a3e_cf(channel_rate,audio_decim)
  **********************************************************************/
 static Pothos::BlockRegistry registerDemod10k0a3eCF(
     "/gr/analog/demod_10k0a3e_cf",
