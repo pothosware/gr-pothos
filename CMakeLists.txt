@@ -255,6 +255,14 @@ foreach (comp_name ${COMP_NAMES})
             ${grc_blocks}
     )
 
+    if ("${comp_name}" STREQUAL "fec")
+        list(APPEND wrapper_output
+            fec/generic_decoder.cc
+            fec/generic_encoder.cc
+            fec/mtrx.cc
+        )
+    endif()
+
     if ("${comp_name}" STREQUAL "filter")
         list(APPEND doc_sources filter/optfirdes.cc)
         list(APPEND wrapper_output
