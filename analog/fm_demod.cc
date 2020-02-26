@@ -33,7 +33,7 @@
 class fm_demod_cf: public Pothos::Topology
 {
 public:
-    Pothos::Topology* make(
+    static Pothos::Topology* make(
         int channel_rate,
         int audio_decim,
         float deviation,
@@ -68,10 +68,19 @@ public:
         d_audio_pass(audio_pass),
         d_audio_stop(audio_stop),
         d_gain(gain),
-        d_quadrature_demod_cf(Pothos::BlockRegistry::make("/gr/analog/quadrature_demod_cf", 0.0f)),
+        d_quadrature_demod_cf(Pothos::BlockRegistry::make(
+                                  "/gr/analog/quadrature_demod_cf",
+                                  0.0f /*gain*/)),
         d_optfir_designer(Pothos::BlockRegistry::make("/gr/filter/optimal_fir_designer")),
-        d_fir_filter_fff(Pothos::BlockRegistry::make("/gr/filter/fir_filter_fff", d_audio_decim, std::vector<float>())),
-        d_fm_deemph(Pothos::BlockRegistry::make("/gr/analog/fm_deemph", d_channel_rate, tau))
+        d_fir_filter_fff(Pothos::BlockRegistry::make(
+                             "/gr/filter/fir_filter",
+                             "fir_filter_fff",
+                             d_audio_decim,
+                             std::vector<float>())),
+        d_fm_deemph(Pothos::BlockRegistry::make(
+                        "/gr/analog/fm_deemph",
+                        d_channel_rate,
+                        tau))
     {
         this->connect(this, 0, d_quadrature_demod_cf, 0);
 
@@ -96,10 +105,14 @@ public:
             d_fir_filter_fff, "set_taps");
         this->connect(d_fir_filter_fff, 0, this, 0);
 
-        const auto k = d_channel_rate /  (2.0f * M_PI * d_deviation);
+        this->connect(
+            this, "tau",
+            d_fm_deemph, "tau");
+
+        const auto k = d_channel_rate / (2.0f * M_PI * d_deviation);
         d_quadrature_demod_cf.call("set_gain", k);
 
-        d_optfir_designer.call("set_band", "LOW_PASS");
+        d_optfir_designer.call("set_band_type", "LOW_PASS");
         d_optfir_designer.call("set_gain", d_gain);
         d_optfir_designer.call("set_sample_rate", d_channel_rate);
         d_optfir_designer.call("set_low_freq", d_audio_pass);
@@ -113,7 +126,6 @@ public:
         this->registerCall(this, POTHOS_FCN_TUPLE(fm_demod_cf, audio_pass));
         this->registerCall(this, POTHOS_FCN_TUPLE(fm_demod_cf, audio_stop));
         this->registerCall(this, POTHOS_FCN_TUPLE(fm_demod_cf, gain));
-        this->registerCall(this, POTHOS_FCN_TUPLE(fm_demod_cf, tau));
     }
 
     int channel_rate() const
@@ -146,11 +158,6 @@ public:
         return d_gain;
     }
 
-    float tau() const
-    {
-        return d_fm_deemph.call<float>("tau");
-    }
-
 private:
     int d_channel_rate;
     int d_audio_decim;
@@ -168,7 +175,7 @@ private:
 class demod_20k0f3e_cf: public fm_demod_cf
 {
 public:
-    Pothos::Topology* make(
+    static Pothos::Topology* make(
         int channel_rate,
         int audio_decim)
     {
@@ -194,7 +201,7 @@ public:
 class demod_200k0f3e_cf: public fm_demod_cf
 {
 public:
-    Pothos::Topology* make(
+    static Pothos::Topology* make(
         int channel_rate,
         int audio_decim)
     {
@@ -217,14 +224,113 @@ public:
     }
 };
 
+/***********************************************************************
+ * |PothosDoc FM Demod
+ *
+ * Generalized FM demodulation block with deemphasis and audio
+ * filtering.
+ * 
+ * This block demodulates a band-limited, complex down-converted FM
+ * channel into the the original baseband signal, optionally applying
+ * deemphasis. Low pass filtering is done on the resultant signal. It
+ * produces an output float stream in the range of [-1.0, +1.0].
+ *
+ * |category /GNURadio/Modulators
+ * |keywords frequency modulation fm
+ *
+ * |param channel_rate[Channel Rate] Incoming sample rate of the FM baseband.
+ * |widget SpinBox(minimum=0)
+ * |default 250000
+ * |preview enable
+ *
+ * |param audio_decim[Audio Decimation] Input to output decimation rate.
+ * |widget SpinBox(mimimum=1)
+ * |default 1
+ * |preview enable
+ *
+ * |param deviation[FM Deviation] Maximum FM deviation.
+ * |widget DoubleSpinBox(minimum=0,step=1.0)
+ * |default 5000.0
+ * |preview enable
+ *
+ * |param audio_pass[Audio Passband Frequency] Audio low-pass filter passband frequency.
+ * |widget DoubleSpinBox(minimum=1,step=1.0)
+ * |default 5000.0
+ * |preview enable
+ *
+ * |param audio_stop[Audio Stopband Frequency] Audio low-pass filter stop frequency.
+ * |widget DoubleSpinBox(minimum=1,step=1.0)
+ * |default 5500.0
+ * |preview enable
+ *
+ * |param gain[Audio Gain] Gain applied to the audio output.
+ * |widget DoubleSpinBox(minimum=0,step=0.01)
+ * |default 1.0
+ * |preview enable
+ *
+ * |param tau[Tau] Deemphasis time constant.
+ * |widget DoubleSpinBox(minimum=0,step=1e-6,decimals=9)
+ * |default 75e-6
+ * |preview enable
+ *
+ * |factory /gr/analog/fm_demod_cf(channel_rate,audio_decim,deviation,audio_pass,audio_stop,gain,tau)
+ **********************************************************************/
 static Pothos::BlockRegistry registerFmDemod(
     "/gr/analog/fm_demod_cf",
     Pothos::Callable(&fm_demod_cf::make));
 
+/***********************************************************************
+ * |PothosDoc FM Demod (20 kHz)
+ *
+ * NBFM demodulation block, 20 KHz channels
+ * 
+ * This block demodulates a complex, downconverted, narrowband FM
+ * channel conforming to 20K0F3E emission standards, outputting
+ * floats in the range [-1.0, +1.0].
+ *
+ * |category /GNURadio/Modulators
+ * |keywords frequency modulation fm narrow band
+ *
+ * |param channel_rate[Channel Rate] Incoming sample rate of the FM baseband.
+ * |widget SpinBox(minimum=0)
+ * |default 250000
+ * |preview enable
+ *
+ * |param audio_decim[Audio Decimation] Input to output decimation rate.
+ * |widget SpinBox(mimimum=1)
+ * |default 1
+ * |preview enable
+ *
+ * |factory /gr/analog/demod_20k0f3e_cf(channel_rate,audio_decim)
+ **********************************************************************/
 static Pothos::BlockRegistry registerDemod20k0f3eCF(
     "/gr/analog/demod_20k0f3e_cf",
     Pothos::Callable(&demod_20k0f3e_cf::make));
 
+/***********************************************************************
+ * |PothosDoc FM Demod (200 kHz)
+ *
+ * WFM demodulation block, mono.
+ * 
+ * This block demodulates a complex, downconverted, wideband FM
+ * channel conforming to 200KF3E emission standards, outputting
+ * floats in the range [-1.0, +1.0].
+ *
+ * |category /GNURadio/Modulators
+ * |keywords frequency modulation fm wide band
+ *
+ * |param channel_rate[Channel Rate] Incoming sample rate of the FM baseband.
+ * |widget SpinBox(minimum=0)
+ * |default 250000
+ * |preview enable
+ *
+ * |param audio_decim[Audio Decimation] Input to output decimation rate.
+ * |widget SpinBox(mimimum=1)
+ * |default 1
+ * |preview enable
+ *
+ * |factory /gr/analog/demod_200k0f3e_cf(channel_rate,audio_decim)
+ **********************************************************************/
 static Pothos::BlockRegistry registerDemod200k0f3eCF(
     "/gr/analog/demod_200k0f3e_cf",
     Pothos::Callable(&demod_200k0f3e_cf::make));

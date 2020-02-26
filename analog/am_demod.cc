@@ -33,7 +33,7 @@
 class am_demod_cf: public Pothos::Topology
 {
 public:
-    Pothos::Topology* make(
+    static Pothos::Topology* make(
         int channel_rate,
         int audio_decim,
         float audio_pass,
@@ -52,13 +52,21 @@ public:
         d_channel_rate(channel_rate),
         d_audio_decim(audio_decim),
         d_audio_pass(audio_pass),
-        d_audio_stop(audio_stop)
+        d_audio_stop(audio_stop),
+        d_complex_to_mag(Pothos::BlockRegistry::make(
+                             "/gr/blocks/complex_to_mag",
+                             1 /*vlen*/)),
+        d_add_const_ff(Pothos::BlockRegistry::make(
+                             "/gr/blocks/add_const",
+                             "add_const_ff",
+                             -1.0f)),
+        d_optfir_designer(Pothos::BlockRegistry::make("/gr/filter/optimal_fir_designer")),
+        d_fir_filter_fff(Pothos::BlockRegistry::make(
+                             "/gr/filter/fir_filter",
+                             "fir_filter_fff",
+                             d_audio_decim,
+                             std::vector<float>()))
     {
-        d_complex_to_mag = Pothos::BlockRegistry::make("/gr/blocks/complex_to_mag", 1 /*vlen*/);
-        d_add_const_ff = Pothos::BlockRegistry::make("/gr/blocks/add_const", "add_const_ff", -1.0f);
-        d_optfir_designer = Pothos::BlockRegistry::make("/gr/filter/optimal_fir_designer");
-        d_fir_filter_fff = Pothos::BlockRegistry::make("/gr/filter/fir_filter_fff", d_audio_decim, std::vector<float>());
-        
         this->connect(this, 0, d_complex_to_mag, 0);
         this->connect(d_complex_to_mag, 0, d_add_const_ff, 0);
         this->connect(d_add_const_ff, 0, d_fir_filter_fff, 0);
@@ -67,7 +75,7 @@ public:
             d_fir_filter_fff, "set_taps");
         this->connect(d_fir_filter_fff, 0, this, 0);
 
-        d_optfir_designer.call("set_band", "LOW_PASS");
+        d_optfir_designer.call("set_band_type", "LOW_PASS");
         d_optfir_designer.call("set_sample_rate", d_channel_rate);
         d_optfir_designer.call("set_low_freq", d_audio_pass);
         d_optfir_designer.call("set_high_freq", d_audio_stop);
@@ -90,7 +98,7 @@ private:
 class demod_10k0a3e_cf: public am_demod_cf
 {
 public:
-    Pothos::Topology* make(
+    static Pothos::Topology* make(
         int channel_rate,
         int audio_decim)
     {
