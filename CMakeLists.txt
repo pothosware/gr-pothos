@@ -167,6 +167,15 @@ message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 ########################################################################
+# json.hpp header
+########################################################################
+find_path(JSON_HPP_INCLUDE_DIR NAMES json.hpp PATH_SUFFIXES nlohmann)
+
+if (NOT JSON_HPP_INCLUDE_DIR)
+    message(WARNING "gr-pothos requires json.hpp, skipping...")
+endif (NOT JSON_HPP_INCLUDE_DIR)
+
+########################################################################
 # Discover installed components
 ########################################################################
 message(STATUS "")
@@ -218,6 +227,7 @@ add_subdirectory(GrPothosBlock)
 ########################################################################
 foreach (comp_name ${COMP_NAMES})
 
+    set(doc_sources "")
     set(wrapper_output
         ${CMAKE_CURRENT_BINARY_DIR}/${comp_name}_wrapper.cc)
 
@@ -252,6 +262,14 @@ foreach (comp_name ${COMP_NAMES})
             fec/mtrx.cc
         )
     endif()
+
+    if ("${comp_name}" STREQUAL "filter")
+        list(APPEND doc_sources filter/optfirdes.cc)
+        list(APPEND wrapper_output
+            filter/optfir.cc
+            filter/optfirdes.cc)
+    endif()
+
     if ("${comp_name}" STREQUAL "trellis")
         list(APPEND wrapper_output gr_trellis_fsm.cc)
     endif()
@@ -259,6 +277,7 @@ foreach (comp_name ${COMP_NAMES})
     POTHOS_MODULE_UTIL(
         TARGET ${comp_name}Support
         SOURCES ${wrapper_output}
+        DOC_SOURCES ${doc_sources}
         LIBRARIES
             ${${comp_name}_LIBRARY}
             ${GNURADIO_LIBRARIES}
