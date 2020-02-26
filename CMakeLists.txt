@@ -167,6 +167,15 @@ message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 ########################################################################
+# json.hpp header
+########################################################################
+find_path(JSON_HPP_INCLUDE_DIR NAMES json.hpp PATH_SUFFIXES nlohmann)
+
+if (NOT JSON_HPP_INCLUDE_DIR)
+    message(WARNING "gr-pothos requires json.hpp, skipping...")
+endif (NOT JSON_HPP_INCLUDE_DIR)
+
+########################################################################
 # Discover installed components
 ########################################################################
 message(STATUS "")
