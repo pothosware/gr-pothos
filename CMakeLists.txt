@@ -247,8 +247,11 @@ foreach (comp_name ${COMP_NAMES})
     )
 
     if ("${comp_name}" STREQUAL "filter")
-        list(APPEND doc_sources filter/optfirdes.cc)
+        list(APPEND doc_sources
+            filter/freq_xlating_fft_filter_ccc.cc
+            filter/optfirdes.cc)
         list(APPEND wrapper_output
+            filter/freq_xlating_fft_filter_ccc.cc
             filter/optfir.cc
             filter/optfirdes.cc)
     endif()
