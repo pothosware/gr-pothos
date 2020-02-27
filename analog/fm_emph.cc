@@ -301,14 +301,18 @@ private:
  * |param sample_rate[Sample Rate] Incoming sample rate.
  * |widget SpinBox(minimum=0)
  * |default 250000
+ * |units Hz
  * |preview enable
  *
  * |param tau[Tau] Deemphasis time constant.
  * |widget DoubleSpinBox(minimum=0,step=1e-6,decimals=9)
  * |default 75e-6
+ * |units secs
  * |preview enable
  *
  * |factory /gr/analog/fm_deemph(sample_rate, tau)
+ * |setter set_sample_rate(sample_rate)
+ * |setter set_tau(tau)
  **********************************************************************/
 static Pothos::BlockRegistry registerFmDeemph(
     "/gr/analog/fm_deemph",
@@ -341,19 +345,25 @@ static Pothos::BlockRegistry registerFmDeemph(
  * |param sample_rate[Sample Rate] Incoming sample rate.
  * |widget SpinBox(minimum=0)
  * |default 250000
+ * |units Hz
  * |preview enable
  *
  * |param tau[Tau] Preemphasis time constant.
  * |widget DoubleSpinBox(minimum=0,step=1e-6,decimals=9)
  * |default 75e-6
+ * |units secs
  * |preview enable
  *
  * |param high_freq[High Freq] The frequency at which the filter flattens out.
  * |widget DoubleSpinBox(minimum=0)
  * |default 0.0
+ * |units Hz
  * |preview enable
  *
  * |factory /gr/analog/fm_preemph(sample_rate, tau, high_freq)
+ * |setter set_sample_rate(sample_rate)
+ * |setter set_tau(tau)
+ * |setter set_high_freq(high_freq)
  **********************************************************************/
 static Pothos::BlockRegistry registerFmPreemph(
     "/gr/analog/fm_preemph",
