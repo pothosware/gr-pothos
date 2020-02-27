@@ -52,8 +52,8 @@ public:
         d_iir_filter_ffd(Pothos::BlockRegistry::make(
                              "/gr/filter/iir_filter",
                              "iir_filter_ffd",
-                             std::vector<double>{},
-                             std::vector<double>{},
+                             std::vector<double>{0.0}, // Passing in an empty vector
+                             std::vector<double>{0.0}, // here results in a crash.
                              false))
     {
         this->connect(this, 0, d_iir_filter_ffd, 0);
@@ -158,8 +158,8 @@ public:
         d_iir_filter_ffd(Pothos::BlockRegistry::make(
                              "/gr/filter/iir_filter",
                              "iir_filter_ffd",
-                             std::vector<double>{},
-                             std::vector<double>{},
+                             std::vector<double>{0.0}, // Passing in an empty vector
+                             std::vector<double>{0.0}, // here results in a crash.
                              false))
     {
         this->connect(this, 0, d_iir_filter_ffd, 0);
