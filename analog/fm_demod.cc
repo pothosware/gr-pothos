@@ -105,10 +105,6 @@ public:
             d_fir_filter_fff, "set_taps");
         this->connect(d_fir_filter_fff, 0, this, 0);
 
-        this->connect(
-            this, "tau",
-            d_fm_deemph, "tau");
-
         const auto k = d_channel_rate / (2.0f * M_PI * d_deviation);
         d_quadrature_demod_cf.call("set_gain", k);
 
@@ -156,6 +152,11 @@ public:
     float gain() const
     {
         return d_gain;
+    }
+
+    float tau() const
+    {
+        return d_fm_deemph.call<float>("tau");
     }
 
 private:
