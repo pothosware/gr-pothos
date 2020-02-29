@@ -264,6 +264,17 @@ foreach (comp_name ${COMP_NAMES})
         )
     endif()
 
+    if ("${comp_name}" STREQUAL "channels")
+        list(APPEND doc_sources
+            channels/amp_bal.cc
+            channels/conj_fs_iqcorr.cc
+            channels/phase_bal.cc)
+        list(APPEND wrapper_output
+            channels/amp_bal.cc
+            channels/conj_fs_iqcorr.cc
+            channels/phase_bal.cc)
+    endif()
+
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND wrapper_output
             fec/generic_decoder.cc
