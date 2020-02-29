@@ -549,6 +549,18 @@ def fromGrcParam(grc_param):
 
     return param_d
 
+def fromCppParam(param_key):
+
+    param_d = dict(key=param_key)
+
+    #the block had a vlen but it was not present in the grc wrapper
+    if param_key == 'vlen':
+        param_d['widgetType'] = 'SpinBox'
+        param_d['name'] = 'Vec Length'
+        param_d['default'] = '1'
+
+    return param_d
+
 def stripConstRef(t):
     return t.replace('const&', '').replace('&', '').replace('const ', '').strip()
 
@@ -680,7 +692,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         params.append(fromGrcParam(grc_params[param_key]))
     for param_key in all_param_keys:
         if param_key in grc_params: continue
-        params.append(dict(key=param_key))
+        params.append(fromCppParam(param_key))
     params_d = dict([(param_d['key'], param_d) for param_d in params])
 
     #adjust factory args to use dtype
