@@ -30,6 +30,8 @@
 // Ported from: gr-analog/python/fm_demod.py
 //
 
+#define IGNORE_PROXY_EXCEPTION(expr) try{expr;}catch(const Pothos::ProxyExceptionMessage&){}
+
 class fm_demod_cf: public Pothos::Topology
 {
 public:
@@ -108,12 +110,14 @@ public:
         const auto k = d_channel_rate / (2.0f * M_PI * d_deviation);
         d_quadrature_demod_cf.call("set_gain", k);
 
-        d_optfir_designer.call("set_band_type", "LOW_PASS");
-        d_optfir_designer.call("set_gain", d_gain);
-        d_optfir_designer.call("set_sample_rate", d_channel_rate);
-        d_optfir_designer.call("set_low_freq", d_audio_pass);
-        d_optfir_designer.call("set_high_freq", d_audio_stop);
-        d_optfir_designer.call("set_passband_ripple", 0.1);
+        // The taps will possibly not be valid until the final call,
+        // but as each call triggers a recalculate, it will error out.
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_band_type", "LOW_PASS");)
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_gain", d_gain);)
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_sample_rate", d_channel_rate);)
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_low_freq", d_audio_pass);)
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_high_freq", d_audio_stop);)
+        IGNORE_PROXY_EXCEPTION(d_optfir_designer.call("set_passband_ripple", 0.1);)
         d_optfir_designer.call("set_stopband_atten", 60.0);
 
         this->registerCall(this, POTHOS_FCN_TUPLE(fm_demod_cf, channel_rate));
