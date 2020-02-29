@@ -513,7 +513,7 @@ def fromGrcParam(grc_param):
         param_d['widgetType'] = 'FileEntry'
         param_d['widgetKwargs'] = dict(mode='save')
 
-    if param_type == 'int':
+    if param_type == 'int' and not options:
 
         #only use the spinbox when the default value is int-parsable
         #we dont use spinbox for hex values and default expressions
