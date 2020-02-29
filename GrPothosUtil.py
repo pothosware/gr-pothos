@@ -571,6 +571,10 @@ def splitFactoryParam(factory_param):
         typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
         argPass = "(char *)" + argName + ".c_str()"
 
+    #char is ambiguously signed or unsigned based on the compiler/platform
+    #force unspecified char to be unsigned to only support positive range
+    elif typeStr == 'char': typeStr = 'unsigned char'
+
     #return c++ type, name of the argument, and code to pass into the factory
     return typeStr, argName, argPass
 
