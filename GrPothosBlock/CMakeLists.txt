@@ -13,6 +13,10 @@ if(LOG4CPP_FOUND)
         pothos_log4cpp_appender.cc
         test_logging.cc
     )
+    message(STATUS "LOG4CPP_INCLUDE_DIRS: ${LOG4CPP_INCLUDE_DIRS}")
+    message(STATUS "LOG4CPP_LIBRARIES: ${LOG4CPP_LIBRARIES}")
+    include_directories(${LOG4CPP_INCLUDE_DIRS})
+    list(APPEND GR_POTHOS_BLOCK_LIBS ${LOG4CPP_LIBRARIES})
 endif()
 
 #create headers to extend friend access to the GrPothosBlock() class
@@ -50,11 +54,13 @@ POTHOS_MODULE_UTIL(
         pothos_block.cc
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
+        gnuradio_info.cc
         test_pmt_helper.cc
         ${appender_sources}
         ${test_sources}
     LIBRARIES
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}
+        ${GR_POTHOS_BLOCK_LIBS}
     DESTINATION blocks/gnuradio
 )

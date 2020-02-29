@@ -513,7 +513,7 @@ def fromGrcParam(grc_param):
         param_d['widgetType'] = 'FileEntry'
         param_d['widgetKwargs'] = dict(mode='save')
 
-    if param_type == 'int':
+    if param_type == 'int' and not options:
 
         #only use the spinbox when the default value is int-parsable
         #we dont use spinbox for hex values and default expressions
@@ -549,6 +549,18 @@ def fromGrcParam(grc_param):
 
     return param_d
 
+def fromCppParam(param_key):
+
+    param_d = dict(key=param_key)
+
+    #the block had a vlen but it was not present in the grc wrapper
+    if param_key == 'vlen':
+        param_d['widgetType'] = 'SpinBox'
+        param_d['name'] = 'Vec Length'
+        param_d['default'] = '1'
+
+    return param_d
+
 def stripConstRef(t):
     return t.replace('const&', '').replace('&', '').replace('const ', '').strip()
 
@@ -570,6 +582,10 @@ def splitFactoryParam(factory_param):
     elif 'const' not in typeStr and typeStr.count('char') == 1 and typeStr.count('*') == 1 and argName == "address":
         typeStr = typeStr.replace('char', 'std::string').replace('*', '&')
         argPass = "(char *)" + argName + ".c_str()"
+
+    #char is ambiguously signed or unsigned based on the compiler/platform
+    #force unspecified char to be unsigned to only support positive range
+    elif typeStr == 'char': typeStr = 'unsigned char'
 
     #return c++ type, name of the argument, and code to pass into the factory
     return typeStr, argName, argPass
@@ -676,7 +692,7 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         params.append(fromGrcParam(grc_params[param_key]))
     for param_key in all_param_keys:
         if param_key in grc_params: continue
-        params.append(dict(key=param_key))
+        params.append(fromCppParam(param_key))
     params_d = dict([(param_d['key'], param_d) for param_d in params])
 
     #adjust factory args to use dtype

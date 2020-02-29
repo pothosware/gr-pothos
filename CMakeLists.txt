@@ -167,6 +167,15 @@ message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
 ########################################################################
+# json.hpp header
+########################################################################
+find_path(JSON_HPP_INCLUDE_DIR NAMES json.hpp PATH_SUFFIXES nlohmann)
+
+if (NOT JSON_HPP_INCLUDE_DIR)
+    message(WARNING "gr-pothos requires json.hpp, skipping...")
+endif (NOT JSON_HPP_INCLUDE_DIR)
+
+########################################################################
 # Discover installed components
 ########################################################################
 message(STATUS "")
@@ -245,6 +254,14 @@ foreach (comp_name ${COMP_NAMES})
             ${headers}
             ${grc_blocks}
     )
+
+    if ("${comp_name}" STREQUAL "fec")
+        list(APPEND wrapper_output
+            fec/generic_decoder.cc
+            fec/generic_encoder.cc
+            fec/mtrx.cc
+        )
+    endif()
 
     if ("${comp_name}" STREQUAL "filter")
         # TODO: pfb
