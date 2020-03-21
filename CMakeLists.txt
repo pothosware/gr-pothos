@@ -107,7 +107,7 @@ message(STATUS "")
 message(STATUS "######################################################")
 message(STATUS "## Configuring Pothos dependency...")
 message(STATUS "######################################################")
-find_package(Pothos CONFIG)
+find_package(Pothos 0.7 CONFIG)
 if (NOT Pothos_FOUND)
     message(FATAL "Requires Pothos")
 endif()
@@ -254,6 +254,15 @@ foreach (comp_name ${COMP_NAMES})
             ${headers}
             ${grc_blocks}
     )
+
+    if ("${comp_name}" STREQUAL "blocks")
+        list(APPEND doc_sources
+            blocks/convert.cc
+        )
+        list(APPEND wrapper_output
+            blocks/convert.cc
+        )
+    endif()
 
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND wrapper_output
