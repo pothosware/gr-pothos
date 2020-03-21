@@ -271,7 +271,9 @@ foreach (comp_name ${COMP_NAMES})
     endif()
 
     if ("${comp_name}" STREQUAL "trellis")
-        list(APPEND wrapper_output gr_trellis_fsm.cc)
+        list(APPEND wrapper_output
+            trellis/fsm.cc
+        )
     endif()
 
     POTHOS_MODULE_UTIL(
