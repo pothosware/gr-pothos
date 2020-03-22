@@ -140,6 +140,6 @@ private:
  * |factory /gr/channels/phase_bal(alpha)
  * |initializer set_alpha(alpha)
  **********************************************************************/
-static Pothos::BlockRegistry registerAmpBal(
+static Pothos::BlockRegistry registerPhaseBal(
     "/gr/channels/phase_bal",
     Pothos::Callable(&phase_bal::make));

@@ -122,6 +122,6 @@ private:
  *
  * |factory /gr/channels/conj_fs_iqcorr(delay,taps)
  **********************************************************************/
-static Pothos::BlockRegistry registerAmpBal(
+static Pothos::BlockRegistry registerConjFSIQCorr(
     "/gr/channels/conj_fs_iqcorr",
     Pothos::Callable(&conj_fs_iqcorr::make));

@@ -268,11 +268,21 @@ foreach (comp_name ${COMP_NAMES})
         list(APPEND doc_sources
             channels/amp_bal.cc
             channels/conj_fs_iqcorr.cc
-            channels/phase_bal.cc)
+            channels/distortion_2_gen.cc
+            channels/distortion_3_gen.cc
+            channels/impairments.cc
+            channels/iqbal_gen.cc
+            channels/phase_bal.cc
+            channels/phase_noise_gen.cc)
         list(APPEND wrapper_output
             channels/amp_bal.cc
             channels/conj_fs_iqcorr.cc
-            channels/phase_bal.cc)
+            channels/distortion_2_gen.cc
+            channels/distortion_3_gen.cc
+            channels/impairments.cc
+            channels/iqbal_gen.cc
+            channels/phase_bal.cc
+            channels/phase_noise_gen.cc)
     endif()
 
     if ("${comp_name}" STREQUAL "fec")
