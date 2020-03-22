@@ -545,7 +545,7 @@ def fromGrcParam(grc_param):
         param_d['default'] = '"complex64"'
         param_d['preview'] = 'disable'
         param_d['widgetType'] = 'DTypeChooser'
-        param_d['widgetKwargs'] = dict(float=1,cfloat=1,int=1,cint=1,uint=1,cuint=1)
+        param_d['widgetKwargs'] = dict(uint8=1,int16=1,int32=1,float32=1,cfloat32=1)
 
     return param_d
 

@@ -43,12 +43,12 @@ class GrPothosBlock;
 class GrPothosBlock : public Pothos::Block
 {
 public:
-    static Pothos::Block *make(boost::shared_ptr<gr::block> block)
+    static Pothos::Block *make(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType)
     {
-        return new GrPothosBlock(block);
+        return new GrPothosBlock(block, vlen, overrideDType);
     }
 
-    GrPothosBlock(boost::shared_ptr<gr::block> block);
+    GrPothosBlock(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType);
     ~GrPothosBlock(void);
     void __setNumInputs(size_t);
     void __setNumOutputs(size_t);
@@ -74,7 +74,7 @@ private:
 /***********************************************************************
  * init the name and ports -- called by the block constructor
  **********************************************************************/
-GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
+GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType):
     d_block(block)
 {
     Pothos::Block::setName(d_block->name());
@@ -83,16 +83,26 @@ GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block):
     for (size_t i = 0; i < std::max<size_t>(d_input_signature->min_streams(), d_input_signature->sizeof_stream_items().size()); i++)
     {
         if (d_input_signature->max_streams() != gr::io_signature::IO_INFINITE and int(i) >= d_input_signature->max_streams()) break;
-        auto bytes = d_input_signature->sizeof_stream_item(i);
-        Pothos::Block::setupInput(i, inferDType(bytes, d_block->name(), true));
+
+        if(overrideDType) Pothos::Block::setupInput(i, Pothos::DType::fromDType(overrideDType, 1));
+        else
+        {
+            auto bytes = d_input_signature->sizeof_stream_item(i);
+            Pothos::Block::setupInput(i, inferDType(bytes, d_block->name(), true, vlen));
+        }
     }
 
     auto d_output_signature = d_block->output_signature();
     for (size_t i = 0; i < std::max<size_t>(d_output_signature->min_streams(), d_output_signature->sizeof_stream_items().size()); i++)
     {
         if (d_output_signature->max_streams() != gr::io_signature::IO_INFINITE and int(i) >= d_output_signature->max_streams()) break;
-        auto bytes = d_output_signature->sizeof_stream_item(i);
-        Pothos::Block::setupOutput(i, inferDType(bytes, d_block->name(), false));
+
+        if(overrideDType) Pothos::Block::setupOutput(i, Pothos::DType::fromDType(overrideDType, 1));
+        else
+        {
+            auto bytes = d_output_signature->sizeof_stream_item(i);
+            Pothos::Block::setupOutput(i, inferDType(bytes, d_block->name(), false, vlen));
+        }
     }
 
     pmt::pmt_t msg_ports_in = d_block->message_ports_in();
