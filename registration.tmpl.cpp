@@ -37,7 +37,7 @@ namespace ${ns} {
 std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_factory_args})
 {
     auto __orig_block = ${factory.factory_function_path}(${factory.internal_factory_args});
-    auto __pothos_block = makeGrPothosBlock(__orig_block, ${"vlength" if "vlength" in factory.internal_factory_args else "vlen" if "vlen" in factory.internal_factory_args else 1}, ${"itemsize" if "const Pothos::DType &itemsize" in factory.exported_factory_args else "sizeof_stream_item" if "const Pothos::DType &sizeof_stream_item" in factory.exported_factory_args else "Pothos::DType()"});
+    auto __pothos_block = makeGrPothosBlock(__orig_block, ${factory.vlen}, ${factory.dtype});
     % if factory.block_methods:
     auto __orig_block_ref = std::ref(*static_cast<${factory.namespace}::${factory.className} *>(__orig_block.get()));
     % endif
