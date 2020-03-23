@@ -273,7 +273,8 @@ foreach (comp_name ${COMP_NAMES})
             channels/impairments.cc
             channels/iqbal_gen.cc
             channels/phase_bal.cc
-            channels/phase_noise_gen.cc)
+            channels/phase_noise_gen.cc
+            channels/quantizer.cc)
         list(APPEND wrapper_output
             channels/amp_bal.cc
             channels/conj_fs_iqcorr.cc
@@ -282,7 +283,8 @@ foreach (comp_name ${COMP_NAMES})
             channels/impairments.cc
             channels/iqbal_gen.cc
             channels/phase_bal.cc
-            channels/phase_noise_gen.cc)
+            channels/phase_noise_gen.cc
+            channels/quantizer.cc)
     endif()
 
     if ("${comp_name}" STREQUAL "fec")
