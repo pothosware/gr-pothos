@@ -300,11 +300,13 @@ foreach (comp_name ${COMP_NAMES})
         list(APPEND doc_sources
             filter/channelizer_ccf.cc
             filter/freq_xlating_fft_filter_ccc.cc
+            filter/interpolator_ccf.cc
             filter/optfirdes.cc
             filter/rational_resampler.cc)
         list(APPEND wrapper_output
             filter/channelizer_ccf.cc
             filter/freq_xlating_fft_filter_ccc.cc
+            filter/interpolator_ccf.cc
             filter/optfir.cc
             filter/optfirdes.cc
             filter/rational_resampler.cc)
