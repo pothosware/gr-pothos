@@ -38,4 +38,4 @@ pmt::pmt_t obj_to_pmt(const Pothos::Object &obj);
 Pothos::Object pmt_to_obj(const pmt::pmt_t &pmt);
 
 //! try our best to infer the data type given the info at hand
-Pothos::DType inferDType(const size_t ioSize, const std::string &name, const bool isInput);
+Pothos::DType inferDType(const size_t ioSize, const std::string &name, const bool isInput, const size_t vlen=1);
