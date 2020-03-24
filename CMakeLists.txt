@@ -289,8 +289,10 @@ foreach (comp_name ${COMP_NAMES})
 
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND doc_sources
+            fec/capillary_threaded_coder.cc
             fec/threaded_coder.cc)
         list(APPEND wrapper_output
+            fec/capillary_threaded_coder.cc
             fec/generic_decoder.cc
             fec/generic_encoder.cc
             fec/mtrx.cc

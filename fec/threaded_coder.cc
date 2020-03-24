@@ -32,7 +32,7 @@
 #include <vector>
 
 /*
- * Ported from: gr-fec/python/threaded_coder.py
+ * Ported from: gr-fec/python/threaded_encoder.py
  */
 
 template <typename CoderType>
