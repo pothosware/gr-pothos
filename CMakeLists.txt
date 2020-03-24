@@ -289,14 +289,12 @@ foreach (comp_name ${COMP_NAMES})
 
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND doc_sources
-            fec/threaded_decoder.cc
-            fec/threaded_encoder.cc)
+            fec/threaded_coder.cc)
         list(APPEND wrapper_output
             fec/generic_decoder.cc
             fec/generic_encoder.cc
             fec/mtrx.cc
-            fec/threaded_decoder.cc
-            fec/threaded_encoder.cc)
+            fec/threaded_coder.cc)
     endif()
 
     if ("${comp_name}" STREQUAL "filter")
