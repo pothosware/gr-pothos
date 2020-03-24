@@ -298,10 +298,12 @@ foreach (comp_name ${COMP_NAMES})
     if ("${comp_name}" STREQUAL "filter")
         # TODO: pfb
         list(APPEND doc_sources
+            filter/channelizer_ccf.cc
             filter/freq_xlating_fft_filter_ccc.cc
             filter/optfirdes.cc
             filter/rational_resampler.cc)
         list(APPEND wrapper_output
+            filter/channelizer_ccf.cc
             filter/freq_xlating_fft_filter_ccc.cc
             filter/optfir.cc
             filter/optfirdes.cc
