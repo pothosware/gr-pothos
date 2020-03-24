@@ -28,6 +28,10 @@ std::shared_ptr<Pothos::Block> makeGrPothosBlock(boost::shared_ptr<BlockType> bl
 /***********************************************************************
  * create block factories
  **********************************************************************/
+
+// To disambiguate
+using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
+
 % for factory in factories:
 
 % for ns in factory.namespace.split("::"):
@@ -38,8 +42,8 @@ std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_facto
 {
     auto __orig_block = ${factory.factory_function_path}(${factory.internal_factory_args});
     auto __pothos_block = makeGrPothosBlock(__orig_block, ${factory.vlen}, ${factory.dtype});
-    % if factory.block_methods:
     auto __orig_block_ref = std::ref(*static_cast<${factory.namespace}::${factory.className} *>(__orig_block.get()));
+    % if factory.block_methods:
     % endif
     % for method in factory.block_methods:
     __pothos_block->registerCallable("${method.name}", Pothos::Callable(&${factory.namespace}::${factory.className}::${method.name}).bind(__orig_block_ref, 0));
@@ -47,6 +51,9 @@ std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_facto
     __pothos_block->registerProbe("${method.name}", "${method.name}_triggered", "probe_${method.name}");
     %endif
     % endfor
+    __pothos_block->registerCallable("declare_sample_delay", Pothos::Callable((DeclareSampleDelayPtr)&${factory.namespace}::${factory.className}::declare_sample_delay).bind(__orig_block_ref, 0));
+    __pothos_block->registerCallable("tag_propagation_policy", Pothos::Callable(&${factory.namespace}::${factory.className}::tag_propagation_policy).bind(__orig_block_ref, 0));
+    __pothos_block->registerCallable("set_tag_propagation_policy", Pothos::Callable(&${factory.namespace}::${factory.className}::set_tag_propagation_policy).bind(__orig_block_ref, 0));
     return __pothos_block;
 }
 
