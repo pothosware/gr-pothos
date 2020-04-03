@@ -292,6 +292,7 @@ foreach (comp_name ${COMP_NAMES})
             fec/capillary_threaded_coder.cc
             fec/threaded_coder.cc)
         list(APPEND wrapper_output
+            fec/bitflip.cc
             fec/capillary_threaded_coder.cc
             fec/generic_decoder.cc
             fec/generic_encoder.cc
