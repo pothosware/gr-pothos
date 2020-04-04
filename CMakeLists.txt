@@ -295,9 +295,11 @@ foreach (comp_name ${COMP_NAMES})
         list(APPEND wrapper_output
             fec/bitflip.cc
             fec/capillary_threaded_coder.cc
+            fec/extended_decoder.cc
             fec/extended_encoder.cc
             fec/generic_decoder.cc
             fec/generic_encoder.cc
+            fec/missing_grc_files.cc
             fec/mtrx.cc
             fec/threaded_coder.cc)
     endif()

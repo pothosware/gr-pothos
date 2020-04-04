@@ -37,7 +37,7 @@ int read_bitlist(const std::string& bitlist)
     return res;
 }
 
-std::vector<unsigned long long> read_bit_bitlist(const std::string& bitlist)
+std::vector<unsigned long long> read_big_bitlist(const std::string& bitlist)
 {
     std::vector<unsigned long long> ret;
 
