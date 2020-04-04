@@ -107,7 +107,7 @@ message(STATUS "")
 message(STATUS "######################################################")
 message(STATUS "## Configuring Pothos dependency...")
 message(STATUS "######################################################")
-find_package(Pothos CONFIG)
+find_package(Pothos 0.7 CONFIG)
 if (NOT Pothos_FOUND)
     message(FATAL "Requires Pothos")
 endif()
@@ -270,6 +270,39 @@ foreach (comp_name ${COMP_NAMES})
             analog/nbfm_rx.cc
             analog/nbfm_tx.cc)
     endif()
+
+    if ("${comp_name}" STREQUAL "blocks")
+        list(APPEND doc_sources
+            blocks/convert.cc
+        )
+        list(APPEND wrapper_output
+            blocks/convert.cc
+        )
+    endif()
+
+    if ("${comp_name}" STREQUAL "channels")
+        list(APPEND doc_sources
+            channels/amp_bal.cc
+            channels/conj_fs_iqcorr.cc
+            channels/distortion_2_gen.cc
+            channels/distortion_3_gen.cc
+            channels/impairments.cc
+            channels/iqbal_gen.cc
+            channels/phase_bal.cc
+            channels/phase_noise_gen.cc
+            channels/quantizer.cc)
+        list(APPEND wrapper_output
+            channels/amp_bal.cc
+            channels/conj_fs_iqcorr.cc
+            channels/distortion_2_gen.cc
+            channels/distortion_3_gen.cc
+            channels/impairments.cc
+            channels/iqbal_gen.cc
+            channels/phase_bal.cc
+            channels/phase_noise_gen.cc
+            channels/quantizer.cc)
+    endif()
+
     if ("${comp_name}" STREQUAL "fec")
         list(APPEND wrapper_output
             fec/generic_decoder.cc
@@ -277,6 +310,7 @@ foreach (comp_name ${COMP_NAMES})
             fec/mtrx.cc
         )
     endif()
+
     if ("${comp_name}" STREQUAL "filter")
         list(APPEND doc_sources filter/optfirdes.cc)
         list(APPEND wrapper_output
@@ -285,7 +319,9 @@ foreach (comp_name ${COMP_NAMES})
     endif()
 
     if ("${comp_name}" STREQUAL "trellis")
-        list(APPEND wrapper_output gr_trellis_fsm.cc)
+        list(APPEND wrapper_output
+            trellis/fsm.cc
+        )
     endif()
 
     POTHOS_MODULE_UTIL(

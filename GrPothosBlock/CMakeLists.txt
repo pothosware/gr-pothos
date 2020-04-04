@@ -55,6 +55,7 @@ POTHOS_MODULE_UTIL(
         pothos_pmt_helper.cc
         pothos_infer_dtype.cc
         gnuradio_info.cc
+        test_dtype.cc
         test_pmt_helper.cc
         ${appender_sources}
         ${test_sources}

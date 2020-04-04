@@ -545,7 +545,7 @@ def fromGrcParam(grc_param):
         param_d['default'] = '"complex64"'
         param_d['preview'] = 'disable'
         param_d['widgetType'] = 'DTypeChooser'
-        param_d['widgetKwargs'] = dict(float=1,cfloat=1,int=1,cint=1,uint=1,cuint=1)
+        param_d['widgetKwargs'] = dict(uint8=1,int16=1,int32=1,float32=1,cfloat32=1)
 
     return param_d
 
@@ -749,6 +749,15 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
     #remove leading [Core] category name
     categories = [c.replace('[Core]', 'GNURadio') for c in categories]
 
+    #grab the vlen variable name if it exists, else 1
+    vlens = [vlenStr for vlenStr in ["vlen", "vlength"] if vlenStr in internal_factory_args]
+    vlenParam = vlens[0] if vlens else 1
+
+    #if the block takes in a DType for an item size, pass it in to override the block's dtype.
+    #these names are also used as size_t, so we have to check the parameter type as well.
+    dtypes = [dtypeStr for dtypeStr in ["itemsize", "sizeof_stream_item"] if "const Pothos::DType &{0}".format(dtypeStr) in exported_factory_args]
+    dtypeParam = dtypes[0] if dtypes else "Pothos::DType()"
+
     factoryInfo = AttributeDict(
         namespace=classInfo['namespace'],
         className=className,
@@ -758,7 +767,9 @@ def getBlockInfo(className, classInfo, cppHeader, blockData, key_to_categories):
         internal_factory_args=', '.join(internal_factory_args),
         block_methods=list(find_block_methods(classInfo)),
         path=create_block_path(className, classInfo),
-        name=className
+        name=className,
+        vlen=vlenParam,
+        dtype=dtypeParam
     )
 
     blockDesc = dict(
