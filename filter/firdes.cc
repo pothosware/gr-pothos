@@ -214,6 +214,7 @@ public:
         REGISTER_GETTER_SETTER(alpha)
         REGISTER_GETTER_SETTER(bt)
 
+        this->registerCall(this, POTHOS_FCN_TUPLE(GrFilterFIRDesigner, taps));
         this->registerProbe("taps", "taps_triggered", "probe_taps");
         this->registerSignal("taps_changed");
 
