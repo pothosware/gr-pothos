@@ -21,6 +21,7 @@
 
 #include "pothos_support.h"
 #include <Pothos/Object.hpp>
+#include <Pothos/Object/Serialize.hpp>
 #include <Pothos/Framework/BufferChunk.hpp>
 #include <Pothos/Framework/Packet.hpp>
 #include <Poco/Format.h>
@@ -368,7 +369,7 @@ pothos_static_block(pothosObjectRegisterPMTSupport)
 
     // Numeric vectors
     register_converter_pair<std::vector<char>>("char_vector");
-    
+
     register_converter_pair<std::vector<std::int8_t>>("schar_vector");
     register_converter_pair<std::vector<std::int16_t>>("sshort_vector");
     register_converter_pair<std::vector<std::int32_t>>("sint_vector");
@@ -391,3 +392,26 @@ pothos_static_block(pothosObjectRegisterPMTSupport)
     // Other
     register_converter_pair<Pothos::BufferChunk>("bufferchunk");
 }
+
+/***********************************************************************
+ * Serialization support
+ **********************************************************************/
+namespace Pothos { namespace serialization {
+template<class Archive>
+void save(Archive & ar, const pmt::pmt_t &t, const unsigned int)
+{
+    ar << pmt::serialize_str(t);
+}
+
+template<class Archive>
+void load(Archive & ar, pmt::pmt_t &t, const unsigned int)
+{
+    std::string str;
+    ar >> str;
+
+    t = pmt::deserialize_str(str);
+}
+}}
+
+POTHOS_SERIALIZATION_SPLIT_FREE(pmt::pmt_t)
+POTHOS_OBJECT_SERIALIZE(pmt::pmt_t)

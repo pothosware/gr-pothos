@@ -25,6 +25,7 @@
 #include <Pothos/Framework/Packet.hpp>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <vector>
 
 template <typename T>
@@ -205,4 +206,29 @@ POTHOS_TEST_BLOCK("/gnuradio/tests", test_pmt_packet)
     {
         POTHOS_TEST_EQUAL(outPkt.payload.as<unsigned char *>()[i], i);
     }
+}
+
+template <typename T>
+static void testPMTSerialization(const T& input)
+{
+    auto pmtObj1 = Pothos::Object(input).convert(typeid(pmt::pmt_t));
+
+    std::stringstream sstream;
+    pmtObj1.serialize(sstream);
+
+    Pothos::Object pmtObj2;
+    pmtObj2.deserialize(sstream);
+    POTHOS_TEST_TRUE(pmtObj2.type() == typeid(pmt::pmt_t));
+
+    POTHOS_TEST_TRUE(pmt::eqv(pmtObj1, pmtObj2));
+}
+
+POTHOS_TEST_BLOCK("/gnuradio/tests", test_pmt_serialization)
+{
+    testPMTSerialization<bool>(false);
+    testPMTSerialization<bool>(true);
+    testPMTSerialization<long>(418);
+    testPMTSerialization<double>(2.54);
+    testPMTSerialization<std::uint64_t>(1234567890ULL);
+    testPMTSerialization<std::string>("testPMTSerialization");
 }
