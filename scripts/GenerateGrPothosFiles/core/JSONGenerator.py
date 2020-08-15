@@ -4,18 +4,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-#
 
-from .base import BindTool
 from gnuradio.blocktool import BlockHeaderParser, GenericHeaderParser
 
-import os
-import pathlib
 import json
-from mako.template import Template
-from datetime import datetime
-import hashlib
-
+import os
 
 class JSONGenerator:
 
