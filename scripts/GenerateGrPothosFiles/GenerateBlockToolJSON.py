@@ -36,24 +36,9 @@ prefix = args.prefix
 output_dir = args.output_dir
 includes = args.include
 for name in args.names:
-    if name not in ['gr', 'pmt']:
-        namespace = ['gr', name.replace("-","_")]
-        #module_dir = os.path.abspath(
-        #    os.path.join(args.src, 'gr-'+name, 'include'))
-        #prefix_include_root = 'gnuradio/'+name  # pmt, gnuradio/digital, etc.
-
-        prefix_include_root = 'include/gnuradio/'+name
-        module_dir = os.path.abspath(os.path.join(args.prefix, prefix_include_root))
-    else:
-        namespace = [name]
-        module_dir = os.path.abspath(os.path.join(
-            args.src, 'gnuradio-runtime', 'include'))
-        if name == 'gr':
-            prefix_include_root = 'gnuradio'
-            module_dir = os.path.join(module_dir, 'gnuradio')
-        elif name == 'pmt':
-            prefix_include_root = 'pmt'
-            module_dir = os.path.join(module_dir, 'pmt')
+    namespace = ['gr', name.replace("-","_")]
+    prefix_include_root = 'include/gnuradio/'+name
+    module_dir = os.path.abspath(os.path.join(args.prefix, prefix_include_root))
 
     import warnings
     with warnings.catch_warnings():

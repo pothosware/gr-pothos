@@ -112,24 +112,10 @@ class JSONGenerator:
     def get_output_dir(self, filename):
         """Get the output directory for a given file"""
         output_dir = self.output_dir
-        rel_path_after_include = ""
-        if self.match_include_structure:
-            if 'include'+os.path.sep in filename:
-                rel_path_after_include = os.path.split(
-                    filename.split('include'+os.path.sep)[-1])[0]
-
-        output_dir = os.path.join(
-            self.output_dir, rel_path_after_include, 'bindings')
-        doc_dir = os.path.join(output_dir, 'docstrings')
-        if output_dir and not os.path.exists(output_dir) and not os.path.exists(doc_dir):
+        if output_dir and not os.path.exists(output_dir):
             output_dir = os.path.abspath(output_dir)
             print('creating output directory {}'.format(output_dir))
             os.makedirs(output_dir)
-
-        if doc_dir and not os.path.exists(doc_dir):
-            doc_dir = os.path.abspath(doc_dir)
-            print('creating docstrings directory {}'.format(doc_dir))
-            os.makedirs(doc_dir)
 
         return output_dir
 
