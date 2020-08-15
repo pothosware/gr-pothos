@@ -1,6 +1,6 @@
 import argparse
 import os
-from gnuradio.bindtool import BindingGenerator
+from core import JSONGenerator
 import pathlib
 
 parser = argparse.ArgumentParser(description='Bind a GR In-Tree Module')
@@ -23,9 +23,9 @@ args = parser.parse_args()
 #   /usr/include/x86_64-linux-gnu/qt5/QtCore,/usr/include/x86_64-linux-gnu/qt5/QtWidgets,/usr/include/qwt qtgui
 
 # To generate UHD requires adding the UHD headers, e.g.
-# python3 /share/gnuradio/grpybind/src/gnuradio/gr-utils/python/bindtool/scripts/bind_gr_module.py 
-#   --prefix /share/gnuradio/grpybind 
-#   --include $UHD_PATH,$UHD_PATH/utils,$UHD_PATH/types,$UHD_PATH/transport,$UHD_PATH/usrp_clock,$UHD_PATH/rfnoc 
+# python3 /share/gnuradio/grpybind/src/gnuradio/gr-utils/python/bindtool/scripts/bind_gr_module.py
+#   --prefix /share/gnuradio/grpybind
+#   --include $UHD_PATH,$UHD_PATH/utils,$UHD_PATH/types,$UHD_PATH/transport,$UHD_PATH/usrp_clock,$UHD_PATH/rfnoc
 #   --output_dir /share/tmp/take5 uhd
 
 
@@ -38,9 +38,12 @@ includes = args.include
 for name in args.names:
     if name not in ['gr', 'pmt']:
         namespace = ['gr', name.replace("-","_")]
-        module_dir = os.path.abspath(
-            os.path.join(args.src, 'gr-'+name, 'include'))
-        prefix_include_root = 'gnuradio/'+name  # pmt, gnuradio/digital, etc.
+        #module_dir = os.path.abspath(
+        #    os.path.join(args.src, 'gr-'+name, 'include'))
+        #prefix_include_root = 'gnuradio/'+name  # pmt, gnuradio/digital, etc.
+
+        prefix_include_root = 'include/gnuradio/'+name
+        module_dir = os.path.abspath(os.path.join(args.prefix, prefix_include_root))
     else:
         namespace = [name]
         module_dir = os.path.abspath(os.path.join(
@@ -55,6 +58,6 @@ for name in args.names:
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-        bg = BindingGenerator(prefix, namespace, prefix_include_root,
-                              output_dir, addl_includes=includes, match_include_structure=True, write_json_output=True)
-        bg.gen_bindings(module_dir)
+        jg = JSONGenerator.JSONGenerator(prefix, namespace, prefix_include_root,
+                                         output_dir, addl_includes=includes, match_include_structure=False, write_json_output=True)
+        jg.generateJSON(module_dir)
