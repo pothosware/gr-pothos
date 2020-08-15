@@ -19,9 +19,7 @@ import hashlib
 
 class JSONGenerator:
 
-    def __init__(self, prefix, namespace, prefix_include_root, output_dir="", addl_includes="",
-                    match_include_structure=False, catch_exceptions=True, write_json_output=False, status_output=None,
-                    flag_automatic=False, flag_pygccxml=False):
+    def __init__(self, prefix, namespace, prefix_include_root, output_dir, addl_includes):
         """Initialize JSONGenerator
         prefix -- path to installed gnuradio prefix (use gr.prefix() if unsure)
         namespace -- desired namespace to parse e.g. ['gr','module_name']
@@ -43,18 +41,12 @@ class JSONGenerator:
         self.module_name = namespace[-1]
         self.prefix_include_root = prefix_include_root
         self.output_dir = output_dir
-        self.match_include_structure = match_include_structure
-        self.catch_exceptions = catch_exceptions
-        self.write_json_output = write_json_output
-        self.status_output = status_output
-        self.flag_automatic = flag_automatic
-        self.flag_pygccxml = flag_pygccxml
 
         pass
 
     def generateSingleJSON(self, file_to_process):
         """Produce the blockname_python.cc python bindings"""
-        output_dir = self.get_output_dir(file_to_process)
+        output_dir = self.getOutputDir(file_to_process)
         binding_pathname = None
         base_name = os.path.splitext(os.path.basename(file_to_process))[0]
         module_include_path = os.path.abspath(os.path.dirname(file_to_process))
@@ -77,11 +69,9 @@ class JSONGenerator:
         try:
             header_info = parser.get_header_info(self.namespace)
 
-            self.write_json(header_info, base_name, output_dir)
+            self.writeJSON(header_info, base_name, output_dir)
 
         except Exception as e:
-            if not self.catch_exceptions:
-                raise(e)
             print(e)
             failure_pathname = os.path.join(
                 output_dir, 'failed_conversions.txt')
@@ -92,9 +82,8 @@ class JSONGenerator:
 
         return binding_pathname
 
-    def get_file_list(self, include_path):
+    def getFileList(self, include_path):
         """Recursively get sorted list of files in path"""
-        print("get_file_list: include_path="+include_path)
         file_list = []
         for root, _, files in os.walk(include_path):
             for file in files:
@@ -104,12 +93,12 @@ class JSONGenerator:
                     file_list.append(pathname)
         return sorted(file_list)
 
-    def write_json(self, header_info, base_name, output_dir):
+    def writeJSON(self, header_info, base_name, output_dir):
         json_pathname = os.path.join(output_dir, '{}.json'.format(base_name))
         with open(json_pathname, 'w') as outfile:
             json.dump(header_info, outfile)
 
-    def get_output_dir(self, filename):
+    def getOutputDir(self, filename):
         """Get the output directory for a given file"""
         output_dir = self.output_dir
         if output_dir and not os.path.exists(output_dir):
@@ -124,8 +113,7 @@ class JSONGenerator:
 
         module_dir -- path to the include directory where the public headers live
         """
-        file_list = self.get_file_list(module_dir)
-        print(file_list)
+        file_list = self.getFileList(module_dir)
         api_pathnames = [s for s in file_list if 'api.h' in s]
         for f in api_pathnames:
             file_list.remove(f)
