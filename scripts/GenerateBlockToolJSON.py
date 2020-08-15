@@ -1,6 +1,6 @@
 import argparse
 import os
-from core import JSONGenerator
+from common import JSONGenerator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Output JSON representation of a set of GNU Radio blocks')
