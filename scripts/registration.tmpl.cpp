@@ -18,9 +18,9 @@ using namespace gr;
  * make GrPothosBlock wrapper with a gr::block
  **********************************************************************/
 template <typename BlockType>
-static std::shared_ptr<Pothos::Block> makeGrPothosBlock(typename GRTraits<BlockType>::SPtr block, size_t vlen, const Pothos::DType& overrideDType)
+static std::shared_ptr<Pothos::Block> makeGrPothosBlock(GRSPtr<BlockType> block, size_t vlen, const Pothos::DType& overrideDType)
 {
-    gr::block_sptr block_ptr = typename GRTraits<BlockType>::dynamicPointerCast(block);
+    auto block_ptr = dynamicPointerCast<BlockType, gr::block>(block);
     auto env = Pothos::ProxyEnvironment::make("managed");
     auto registry = env->findProxy("Pothos/BlockRegistry");
     return registry.call<std::shared_ptr<Pothos::Block>>("/gnuradio/block", block_ptr, vlen, overrideDType);

@@ -29,36 +29,36 @@
 #include <string>
 #include <type_traits>
 
-// Compile-time check for what shared_ptr this build uses
-
-constexpr bool GRUsesStdSPtr = std::is_same<gr::block_sptr, std::shared_ptr<gr::block>>::value;
-
-//template <typename T, std::enable_if<GRUsesStdSPtr>::type* = nullptr>
-template <typename T>
-struct GRTraits
-{
-    using SPtr = typename std::shared_ptr<T>;
-
-    template <typename U>
-    inline static std::shared_ptr<U> dynamicPointerCast(SPtr input)
-    {
-        return std::dynamic_pointer_cast<U>(input);
-    }
-};
-
 /*
-template <typename T, std::enable_if<!GRUsesStdSPtr>::type* = nullptr>
-struct GRTraits
-{
-    using SPtr = typename boost::shared_ptr<T>;
+ * Mid-3.8, GNU Radio switched from using boost::shared_ptr to std::shared_ptr.
+ * This logic lets us handle both cases.
+ */
 
-    template <typename U>
-    inline static boost::shared_ptr<U> dynamicPointerCast(SPtr input)
+namespace detail
+{
+    constexpr bool GRUsesStdSPtr = std::is_same<gr::block_sptr, std::shared_ptr<gr::block>>::value;
+
+    template <typename In, typename Out>
+    inline std::shared_ptr<Out> dynamicPointerCast(std::shared_ptr<In> in)
     {
-        return boost::dynamic_pointer_cast<U>(input);
+        return std::dynamic_pointer_cast<Out>(in);
+    }
+
+    template <typename In, typename Out>
+    inline boost::shared_ptr<Out> dynamicPointerCast(boost::shared_ptr<In> in)
+    {
+        return boost::dynamic_pointer_cast<Out>(in);
     }
 }
-*/
+
+template <typename T>
+using GRSPtr = typename std::conditional<detail::GRUsesStdSPtr, std::shared_ptr<T>, boost::shared_ptr<T>>::type;
+
+template <typename In, typename Out>
+GRSPtr<Out> inline dynamicPointerCast(GRSPtr<In> sptr)
+{
+    return detail::dynamicPointerCast(sptr);
+}
 
 /*!
  * Conversions between Object and pmt_t types.
