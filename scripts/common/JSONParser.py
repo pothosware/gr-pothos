@@ -49,7 +49,7 @@ class JSONParser:
         classes = self.__getFieldForAllFiles("classes")
         # Filter out classes blocks not of our supported block types.
         SUPPORTED_BLOCK_TYPES = ["::gr::block", "::gr::sync_block", "::gr::sync_interpolator", "::gr::sync_decimator"]
-        classes = [clazz for clazz in classes if "::".join(clazz[0]["bases"]).replace("::::") in SUPPORTED_BLOCK_TYPES]
+        classes = [clazz for clazz in classes if "::".join(clazz[0]["bases"]).replace("::::","::") in SUPPORTED_BLOCK_TYPES]
 
         # For each class, assemble the strings we'll need based on arguments, etc
         for clazz in classes:
@@ -62,6 +62,11 @@ class JSONParser:
                         if ("itemsize" in arg["name"]) and ("size_t" in arg["dtype"]):
                             factoryArgs += ["const Pothos::DType& itemsize"]
                             makeCallArgs += ["itemsize.size()"]
+                            func["dtype"] = "itemsize"
+                        if ("sizeof_stream_item" in arg["name"]) and ("size_t" in arg["dtype"]):
+                            factoryArgs += ["const Pothos::DType& sizeof_stream_item"]
+                            makeCallArgs += ["sizeof_stream_item.size()"]
+                            func["dtype"] = "sizeof_stream_item"
                         elif arg["dtype"].replace(" ","") == "char*":
                             factoryArgs += ["const std::string& {0}".format(arg["name"])]
                             makeCallArgs += ["const_cast<char*>({0}.c_str())".format(arg["name"])]
@@ -69,12 +74,19 @@ class JSONParser:
                             factoryArgs += ["{0} {1}".format(arg["dtype"], arg["name"])]
                             makeCallArgs += [arg["name"]]
 
+                    func["className"] = clazz[0]["name"]
                     func["factoryArgs"] = ", ".join(factoryArgs)
                     func["makeCallArgs"] = ", ".join(makeCallArgs)
+                    func["vlen"] = "vlen" if "vlen" in func["makeCallArgs"] else 1
+                    if "dtype" not in func: func["dtype"] = "Pothos::DType()"
                 else:
                     continue
 
         return classes
+
+    def getFactories(self):
+        classes = self.getClasses()
+        return [clazz[0]["member_functions"][0] for clazz in classes if clazz[0]["member_functions"][0]["name"] == "make"]
 
     def __getFieldForAllFiles(self, fieldName):
         outputs = []

@@ -13,16 +13,21 @@ if __name__ == "__main__":
 
     parser = JSONParser.JSONParser(args.input_dir, args.prefix)
 
-    namespace = os.path.basename(args.input_dir)
+    namespace = "gr::"+os.path.basename(args.input_dir)
     enums = parser.getEnums()
     headers = parser.getIncludes()
+    factories = parser.getFactories()
 
     tmpl = None
     with open(os.path.join(os.path.dirname(__file__), "registration.tmpl.cpp"),"r") as f:
         tmpl = f.read()
 
     try:
-        output = mako.template.Template(tmpl).render(namespace=namespace,enums=enums,headers=headers)
+        output = mako.template.Template(tmpl).render(
+                     namespace=namespace,
+                     enums=enums,
+                     headers=headers,
+                     factories=factories)
     except:
         print(mako.exceptions.text_error_template().render())
         sys.exit(1)

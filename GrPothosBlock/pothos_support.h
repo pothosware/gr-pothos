@@ -57,7 +57,7 @@ using GRSPtr = typename std::conditional<detail::GRUsesStdSPtr, std::shared_ptr<
 template <typename In, typename Out>
 GRSPtr<Out> inline dynamicPointerCast(GRSPtr<In> sptr)
 {
-    return detail::dynamicPointerCast(sptr);
+    return detail::dynamicPointerCast<In, Out>(sptr);
 }
 
 /*!

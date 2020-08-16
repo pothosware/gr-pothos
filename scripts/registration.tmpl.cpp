@@ -27,6 +27,35 @@ static std::shared_ptr<Pothos::Block> makeGrPothosBlock(GRSPtr<BlockType> block,
 }
 
 /***********************************************************************
+ * create block factories
+ **********************************************************************/
+
+// To disambiguate
+using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
+
+% for factory in factories:
+
+% for ns in namespace.split("::"):
+namespace ${ns} {
+% endfor
+
+std::shared_ptr<Pothos::Block> factory__${factory["className"]}(${factory["factoryArgs"]})
+{
+    auto __orig_block = ${factory["className"]}::${factory["name"]}(${factory["makeCallArgs"]});
+    auto __pothos_block = makeGrPothosBlock<${namespace}::${factory["className"]}>(__orig_block, ${factory["vlen"]}, ${factory["dtype"]});
+    auto __orig_block_ref = std::ref(*static_cast<${namespace}::${factory["className"]} *>(__orig_block.get()));
+    __pothos_block->registerCallable("declare_sample_delay", Pothos::Callable((DeclareSampleDelayPtr)&${namespace}::${factory["className"]}::declare_sample_delay).bind(__orig_block_ref, 0));
+    __pothos_block->registerCallable("tag_propagation_policy", Pothos::Callable(&${namespace}::${factory["className"]}::tag_propagation_policy).bind(__orig_block_ref, 0));
+    __pothos_block->registerCallable("set_tag_propagation_policy", Pothos::Callable(&${namespace}::${factory["className"]}::set_tag_propagation_policy).bind(__orig_block_ref, 0));
+    return __pothos_block;
+}
+
+% for ns in namespace.split("::"):
+} //namespace $ns
+% endfor
+% endfor
+
+/***********************************************************************
  * enum conversions
  **********************************************************************/
 % for enum in enums:
