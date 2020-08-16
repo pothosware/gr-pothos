@@ -188,6 +188,7 @@ list(APPEND COMPONENT_BLACKLIST
     uhd fcd comedi #ignore devices, pothos-sdr
     wxgui qtgui #ignore graphics, pothos-widgets
     messages thread swig #runtime headers
+    video_sdl
 )
 
 file(GLOB inc_dirs "${GR_INCLUDE_ROOT}/*")
@@ -204,10 +205,10 @@ foreach (inc_dir ${inc_dirs})
         #pass
     elseif (NOT (${blacklisted} EQUAL -1))
         message(STATUS "Found ${comp_name} - skipped: blacklisted")
-    elseif(NOT ${comp_name}_LIBRARY)
-        message(STATUS "Found ${comp_name} - skipped: ${${comp_name}_LIBRARY}")
-    elseif(${num_grc_blocks} EQUAL 0)
-        message(STATUS "Found ${comp_name} - skipped: no GRC blocks")
+        #elseif(NOT ${comp_name}_LIBRARY)
+        #message(STATUS "Found ${comp_name} - skipped: ${${comp_name}_LIBRARY}")
+        #elseif(${num_grc_blocks} EQUAL 0)
+        #message(STATUS "Found ${comp_name} - skipped: no GRC blocks")
     else()
         message(STATUS "Found ${comp_name} - OK")
         list(APPEND COMP_NAMES ${comp_name})
@@ -220,12 +221,26 @@ endforeach (inc_dir)
 #
 # Test with PothosUtil --self-tests=/gnuradio
 ########################################################################
-add_subdirectory(GrPothosBlock)
+#add_subdirectory(GrPothosBlock)
 
 ########################################################################
 # Build modules
 ########################################################################
 foreach (comp_name ${COMP_NAMES})
+
+    set(blocktool_output_dir ${CMAKE_CURRENT_BINARY_DIR}/blocktool_output/${comp_name})
+    set(blocktool_output_path ${blocktool_output_dir}/make_target)
+    add_custom_target(${comp_name}_blocktool_output ALL DEPENDS ${blocktool_output_path})
+
+    add_custom_command(
+        OUTPUT ${blocktool_output_path}
+        COMMENT "Generating ${comp_name} JSON (this may take a while...)"
+        COMMAND ${PYTHON_EXECUTABLE} -B
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateBlockToolJSON.py
+            --prefix=${GR_ROOT}
+            --output-dir=${blocktool_output_dir}
+            ${comp_name}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateBlockToolJSON.py)
 
     set(doc_sources "")
     set(wrapper_output
@@ -321,6 +336,8 @@ foreach (comp_name ${COMP_NAMES})
             ${Boost_LIBRARIES}
         DESTINATION gnuradio
     )
+
+    add_dependencies(${comp_name}Support ${comp_name}_blocktool_output)
 
 endforeach (comp_name)
 

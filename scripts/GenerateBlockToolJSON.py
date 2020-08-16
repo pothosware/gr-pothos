@@ -6,7 +6,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Output JSON representation of a set of GNU Radio blocks')
     parser.add_argument('names', type=str, nargs='+',
                         help='Names of gr modules to bind (e.g. fft digital analog)')
-    parser.add_argument('--output_dir', default='/tmp',
+    parser.add_argument('--output-dir', default='/tmp',
                         help='Output directory of generated bindings')
     parser.add_argument('--prefix', help='Prefix of Installed GNU Radio')
     parser.add_argument(
