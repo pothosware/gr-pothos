@@ -863,101 +863,104 @@ def main():
     parser.add_option("--log", help="dump log messages to specified file")
     (options, args) = parser.parse_args()
 
-    #check input
-    if options.target is None: raise Exception('GrPothosUtil requires --target')
-    if options.prefix is None: raise Exception('GrPothosUtil requires --prefix')
-    out_path = options.out_path
-    header("GrPothosUtil begin: prefix=%s, target=%s, out=%s", options.prefix, options.target, out_path)
+    with open(options.out_path, "w") as f:
+        f.write("")
 
-    #check paths
-    grc_path = os.path.join(options.prefix, 'share', 'gnuradio', 'grc', 'blocks')
-    header_path = os.path.join(options.prefix, 'include', 'gnuradio', options.target)
-    if not os.path.exists(grc_path):
-        error("grc path does not exist: " + grc_path)
-        exit(-1)
-    if not os.path.exists(header_path):
-        error("gnuradio includes path does not exist: " + header_path)
-        exit(-1)
-
-    #generator information
-    headers = list()
-    factories = list()
-    meta_factories = list()
-    registrations = list()
-    blockDescs = list()
-
-    #extract grc metadata
-    grc_data = dict(gather_grc_data([grc_path], glob=options.target+"_*.xml"))
-    key_to_categories = grcBlockKeyToCategoryMap(grc_data)
-
-    #extract header data
-    header_data = gather_header_data([header_path])
-
-    #extract info for each block class
-    grc_file_to_meta_group = dict()
-    for headerPath, cppHeader in header_data:
-        for className, classInfo in query_block_classes(cppHeader):
-            try:
-                file_name = getGrcFileMatch(className, classInfo, grc_data.keys())
-                factory, blockDesc = getBlockInfo(className, classInfo, cppHeader, grc_data[file_name]['block'], key_to_categories)
-                if file_name not in grc_file_to_meta_group: grc_file_to_meta_group[file_name] = list()
-                grc_file_to_meta_group[file_name].append((factory, blockDesc))
-                headers.append(headerPath) #include header on success
-            except Exception as ex:
-                warning('%s: %s', options.target, str(ex))
-                #print traceback.format_exc()
-
-    #determine meta-block grouping -- one file to many keys
-    for grc_file, info in grc_file_to_meta_group.items():
-        if len(info) > 1:
-            try:
-                metaFactory, metaBlockDesc = createMetaBlockInfo(grc_data, grc_file, info)
-                blockDescs.append(metaBlockDesc)
-                for factory, blockDesc in info:
-                    factories.append(factory)
-                meta_factories.append(metaFactory)
-                registrations.append(metaFactory) #uses keys: name and path
-
-            except Exception as ex:
-                error(str(ex))
-                #print traceback.format_exc()
-        else:
-            for factory, blockDesc in info:
-                factories.append(factory)
-                registrations.append(factory) #uses keys: name and path
-                blockDescs.append(blockDesc)
-
-    #summary of findings
-    notice('%s: Total factories        %d', options.target, len(factories))
-    notice('%s: Total meta-factories   %d', options.target, len(meta_factories))
-    notice('%s: Total enumerations     %d', options.target, len(DISCOVERED_ENUMS))
-    notice('%s: Total registrations    %d', options.target, len(registrations))
-
-    #generate output source
-    sort_by_name = lambda l: sorted(l, key=lambda e: e['name'])
-    output = classInfoIntoRegistration(
-        headers=sorted(set(headers+ENUM_HEADERS)),
-        enums=sort_by_name(DISCOVERED_ENUMS),
-        factories=sort_by_name(factories),
-        meta_factories=sort_by_name(meta_factories),
-        registrations=sort_by_name(registrations),
-        blockDescs=dict([(desc['path'], json.dumps(desc)) for desc in blockDescs]),
-    )
-
-    #send output to file or stdout
-    if out_path:
-        if out_path == 'stdout': print(output)
-        else: open(out_path, 'w').write(output)
-
-    #debug dumps of json blocks
-    '''
-    for desc in blockDescs:
-        name = desc['path'].replace('/', '_')[1:]
-        open(name + '.json', 'w').write(json.dumps(desc, indent=4))
-    '''
-
-    #dump the log messages to file
-    if options.log and LOG[0]:
-        open(options.log, 'w').write(LOG[0])
+#    #check input
+#    if options.target is None: raise Exception('GrPothosUtil requires --target')
+#    if options.prefix is None: raise Exception('GrPothosUtil requires --prefix')
+#    out_path = options.out_path
+#    header("GrPothosUtil begin: prefix=%s, target=%s, out=%s", options.prefix, options.target, out_path)
+#
+#    #check paths
+#    grc_path = os.path.join(options.prefix, 'share', 'gnuradio', 'grc', 'blocks')
+#    header_path = os.path.join(options.prefix, 'include', 'gnuradio', options.target)
+#    if not os.path.exists(grc_path):
+#        error("grc path does not exist: " + grc_path)
+#        exit(-1)
+#    if not os.path.exists(header_path):
+#        error("gnuradio includes path does not exist: " + header_path)
+#        exit(-1)
+#
+#    #generator information
+#    headers = list()
+#    factories = list()
+#    meta_factories = list()
+#    registrations = list()
+#    blockDescs = list()
+#
+#    #extract grc metadata
+#    grc_data = dict(gather_grc_data([grc_path], glob=options.target+"_*.xml"))
+#    key_to_categories = grcBlockKeyToCategoryMap(grc_data)
+#
+#    #extract header data
+#    header_data = gather_header_data([header_path])
+#
+#    #extract info for each block class
+#    grc_file_to_meta_group = dict()
+#    for headerPath, cppHeader in header_data:
+#        for className, classInfo in query_block_classes(cppHeader):
+#            try:
+#                file_name = getGrcFileMatch(className, classInfo, grc_data.keys())
+#                factory, blockDesc = getBlockInfo(className, classInfo, cppHeader, grc_data[file_name]['block'], key_to_categories)
+#                if file_name not in grc_file_to_meta_group: grc_file_to_meta_group[file_name] = list()
+#                grc_file_to_meta_group[file_name].append((factory, blockDesc))
+#                headers.append(headerPath) #include header on success
+#            except Exception as ex:
+#                warning('%s: %s', options.target, str(ex))
+#                #print traceback.format_exc()
+#
+#    #determine meta-block grouping -- one file to many keys
+#    for grc_file, info in grc_file_to_meta_group.items():
+#        if len(info) > 1:
+#            try:
+#                metaFactory, metaBlockDesc = createMetaBlockInfo(grc_data, grc_file, info)
+#                blockDescs.append(metaBlockDesc)
+#                for factory, blockDesc in info:
+#                    factories.append(factory)
+#                meta_factories.append(metaFactory)
+#                registrations.append(metaFactory) #uses keys: name and path
+#
+#            except Exception as ex:
+#                error(str(ex))
+#                #print traceback.format_exc()
+#        else:
+#            for factory, blockDesc in info:
+#                factories.append(factory)
+#                registrations.append(factory) #uses keys: name and path
+#                blockDescs.append(blockDesc)
+#
+#    #summary of findings
+#    notice('%s: Total factories        %d', options.target, len(factories))
+#    notice('%s: Total meta-factories   %d', options.target, len(meta_factories))
+#    notice('%s: Total enumerations     %d', options.target, len(DISCOVERED_ENUMS))
+#    notice('%s: Total registrations    %d', options.target, len(registrations))
+#
+#    #generate output source
+#    sort_by_name = lambda l: sorted(l, key=lambda e: e['name'])
+#    output = classInfoIntoRegistration(
+#        headers=sorted(set(headers+ENUM_HEADERS)),
+#        enums=sort_by_name(DISCOVERED_ENUMS),
+#        factories=sort_by_name(factories),
+#        meta_factories=sort_by_name(meta_factories),
+#        registrations=sort_by_name(registrations),
+#        blockDescs=dict([(desc['path'], json.dumps(desc)) for desc in blockDescs]),
+#    )
+#
+#    #send output to file or stdout
+#    if out_path:
+#        if out_path == 'stdout': print(output)
+#        else: open(out_path, 'w').write(output)
+#
+#    #debug dumps of json blocks
+#    '''
+#    for desc in blockDescs:
+#        name = desc['path'].replace('/', '_')[1:]
+#        open(name + '.json', 'w').write(json.dumps(desc, indent=4))
+#    '''
+#
+#    #dump the log messages to file
+#    if options.log and LOG[0]:
+#        open(options.log, 'w').write(LOG[0])
 
 if __name__ == '__main__': main()
