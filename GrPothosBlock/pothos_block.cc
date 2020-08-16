@@ -30,6 +30,7 @@ class GrPothosBlock;
 #include <gnuradio/block_detail.h>
 #include <gnuradio/blocks/nop.h>
 #include <gnuradio/logger.h>
+#include <gnuradio/runtime_types.h>
 #include "block_executor.h" //local copy of stock executor, missing from gr install
 #include "pothos_support.h" //misc utility functions
 #include <cmath>
@@ -43,12 +44,12 @@ class GrPothosBlock;
 class GrPothosBlock : public Pothos::Block
 {
 public:
-    static Pothos::Block *make(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType)
+    static Pothos::Block *make(gr::block_sptr block, size_t vlen, const Pothos::DType& overrideDType)
     {
         return new GrPothosBlock(block, vlen, overrideDType);
     }
 
-    GrPothosBlock(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType);
+    GrPothosBlock(gr::block_sptr block, size_t vlen, const Pothos::DType& overrideDType);
     ~GrPothosBlock(void);
     void __setNumInputs(size_t);
     void __setNumOutputs(size_t);
@@ -62,8 +63,8 @@ public:
     Pothos::BufferManager::Sptr getOutputBufferManager(const std::string &name, const std::string &domain);
 
 private:
-    boost::shared_ptr<gr::block> d_msg_accept_block;
-    boost::shared_ptr<gr::block> d_block;
+    gr::block_sptr d_msg_accept_block;
+    gr::block_sptr d_block;
     gr::block_executor *d_exec;
     gr::block_detail_sptr d_detail;
     gr_vector_int d_ninput_items_required;
@@ -74,7 +75,7 @@ private:
 /***********************************************************************
  * init the name and ports -- called by the block constructor
  **********************************************************************/
-GrPothosBlock::GrPothosBlock(boost::shared_ptr<gr::block> block, size_t vlen, const Pothos::DType& overrideDType):
+GrPothosBlock::GrPothosBlock(gr::block_sptr block, size_t vlen, const Pothos::DType& overrideDType):
     d_block(block)
 {
     Pothos::Block::setName(d_block->name());
