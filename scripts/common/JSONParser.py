@@ -60,13 +60,13 @@ class JSONParser:
                     for i,arg in enumerate(func["arguments"]):
                         # Hardcode some special cases
                         if ("itemsize" in arg["name"]) and ("size_t" in arg["dtype"]):
-                            factoryArgs += ["const Pothos::DType& itemsize"]
-                            makeCallArgs += ["itemsize.size()"]
-                            func["dtype"] = "itemsize"
+                            factoryArgs += ["const Pothos::DType& dtype"]
+                            makeCallArgs += ["dtype.size()"]
+                            func["dtype"] = "dtype"
                         elif ("sizeof_stream_item" in arg["name"]) and ("size_t" in arg["dtype"]):
-                            factoryArgs += ["const Pothos::DType& sizeof_stream_item"]
-                            makeCallArgs += ["sizeof_stream_item.size()"]
-                            func["dtype"] = "sizeof_stream_item"
+                            factoryArgs += ["const Pothos::DType& dtype"]
+                            makeCallArgs += ["dtype.size()"]
+                            func["dtype"] = "dtype"
                         elif arg["dtype"].replace(" ","") == "char*":
                             factoryArgs += ["const std::string& {0}".format(arg["name"])]
                             makeCallArgs += ["const_cast<char*>({0}.c_str())".format(arg["name"])]

@@ -33,17 +33,32 @@ static std::shared_ptr<Pothos::Block> makeGrPothosBlock(GRSPtr<BlockType> block,
 // To disambiguate
 using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
 
-% for factory in factories:
+% for clazz in classes:
+<%
+    SKIP = ["squelch_base_cc", "squelch_base_ff"]
+    if clazz[0]["name"] in SKIP: continue
+
+    factory = [func for func in clazz[0]["member_functions"] if func["name"] == "make"][0]
+    methods = [func for func in clazz[0]["member_functions"] if func["name"] != "make"]
+%>
 
 % for ns in namespace.split("::"):
 namespace ${ns} {
 % endfor
 
-std::shared_ptr<Pothos::Block> factory__${factory["className"]}(${factory["factoryArgs"]})
+std::shared_ptr<Pothos::Block> factory__${clazz[0]["name"]}(${factory["factoryArgs"]})
 {
     auto __orig_block = ${factory["className"]}::${factory["name"]}(${factory["makeCallArgs"]});
     auto __pothos_block = makeGrPothosBlock<${namespace}::${factory["className"]}>(__orig_block, ${factory["vlen"]}, ${factory["dtype"]});
     auto __orig_block_ref = std::ref(*static_cast<${namespace}::${factory["className"]} *>(__orig_block.get()));
+    % if methods:
+    % for method in methods:
+    __pothos_block->registerCallable("${method["name"]}", Pothos::Callable(&${namespace}::${factory["className"]}::${method["name"]}).bind(__orig_block_ref, 0));
+    % if not method["arguments"] and method["name"] not in ["start", "stop"]:
+    __pothos_block->registerProbe("${method["name"]}", "${method["name"]}_triggered", "probe_${method["name"]}");
+    % endif
+    % endfor
+    % endif
     __pothos_block->registerCallable("declare_sample_delay", Pothos::Callable((DeclareSampleDelayPtr)&${namespace}::${factory["className"]}::declare_sample_delay).bind(__orig_block_ref, 0));
     __pothos_block->registerCallable("tag_propagation_policy", Pothos::Callable(&${namespace}::${factory["className"]}::tag_propagation_policy).bind(__orig_block_ref, 0));
     __pothos_block->registerCallable("set_tag_propagation_policy", Pothos::Callable(&${namespace}::${factory["className"]}::set_tag_propagation_policy).bind(__orig_block_ref, 0));

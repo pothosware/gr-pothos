@@ -17,6 +17,7 @@ if __name__ == "__main__":
     enums = parser.getEnums()
     headers = parser.getIncludes()
     factories = parser.getFactories()
+    classes = parser.getClasses()
 
     tmpl = None
     with open(os.path.join(os.path.dirname(__file__), "registration.tmpl.cpp"),"r") as f:
@@ -27,7 +28,8 @@ if __name__ == "__main__":
                      namespace=namespace,
                      enums=enums,
                      headers=headers,
-                     factories=factories)
+                     factories=factories,
+                     classes=classes)
     except:
         print(mako.exceptions.text_error_template().render())
         sys.exit(1)
