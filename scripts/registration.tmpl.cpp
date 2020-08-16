@@ -1,5 +1,6 @@
 //this is a machine generated file...
 
+#include "GrPothosBlock/pothos_support.h"
 #include <Pothos/Framework.hpp>
 #include <Pothos/Proxy.hpp>
 #include <gnuradio/block.h>
@@ -17,9 +18,9 @@ using namespace gr;
  * make GrPothosBlock wrapper with a gr::block
  **********************************************************************/
 template <typename BlockType>
-std::shared_ptr<Pothos::Block> makeGrPothosBlock(boost::shared_ptr<BlockType> block, size_t vlen, const Pothos::DType& overrideDType)
+std::shared_ptr<Pothos::Block> makeGrPothosBlock(GRTraits<BlockType>::SPtr block, size_t vlen, const Pothos::DType& overrideDType)
 {
-    auto block_ptr = boost::dynamic_pointer_cast<gr::block>(block);
+    auto block_ptr = GRTraits<BlockType>::dynamicPointerCast<gr::block>(block);
     auto env = Pothos::ProxyEnvironment::make("managed");
     auto registry = env->findProxy("Pothos/BlockRegistry");
     return registry.call<std::shared_ptr<Pothos::Block>>("/gnuradio/block", block_ptr, vlen, overrideDType);

@@ -22,8 +22,40 @@
 #pragma once
 #include <Pothos/Object/Object.hpp>
 #include <Pothos/Framework/DType.hpp>
+#include <gnuradio/runtime_types.h>
 #include <pmt/pmt.h>
+#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
+#include <type_traits>
+
+// Compile-time check for what shared_ptr this build uses
+
+constexpr bool GRUsesStdSPtr = std::is_same<gr::block_sptr, std::shared_ptr<gr::block>>::value;
+
+template <typename T, std::enable_if<GRUsesStdSPtr>::type* = nullptr>
+struct GRTraits
+{
+    using SPtr = typename std::shared_ptr<T>;
+
+    template <typename U>
+    inline static std::shared_ptr<U> dynamicPointerCast(SPtr input)
+    {
+        return std::dynamic_pointer_cast<U>(input);
+    }
+}
+
+template <typename T, std::enable_if<!GRUsesStdSPtr>::type* = nullptr>
+struct GRTraits
+{
+    using SPtr = typename boost::shared_ptr<T>;
+
+    template <typename U>
+    inline static boost::shared_ptr<U> dynamicPointerCast(SPtr input)
+    {
+        return boost::dynamic_pointer_cast<U>(input);
+    }
+}
 
 /*!
  * Conversions between Object and pmt_t types.

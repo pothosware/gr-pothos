@@ -27,21 +27,6 @@ class JSONParser:
     def getNamespace(self):
         return self.allJSON[0]["module_name"]
 
-    # Account for the change from boost::shared_ptr to std::shared_ptr.
-    # TODO: replace with single CMake check
-    def getSPtrNamespace(self):
-        namespaces = ["std", "boost"]
-
-        for include in self.includes:
-            with open(os.path.join(self.grInstallDir, include), "r") as f:
-                contents = f.read()
-                for namespace in namespaces:
-                    if "typedef {0}::shared_ptr<".format(namespace) in contents:
-                        return namespace
-
-        # We should never get here, but oh well. Hope this works.
-        return "std"
-
     def getIncludes(self):
         return self.includes
 
@@ -52,7 +37,6 @@ class JSONParser:
         classes = self.__getFieldForAllFiles("classes")
 
         # For each class, assemble the strings we'll need based on arguments, etc
-        # TODO: replacements
         for clazz in classes:
             for func in clazz["member_functions"]:
                 if func["name"] == "make":
