@@ -19,7 +19,7 @@ class JSONParser:
 
         self.jsonPaths = [os.path.join(self.moduleDir, p) for p in os.listdir(self.moduleDir) if p.endswith(".json")]
         for path in self.jsonPaths:
-            self.includes += ["gnuradio/{0}/{1}.h".format(os.path.basename(os.path.dirname(path)), os.path.splitext(os.path.basename(path))[0])]
+            self.includes += ["gnuradio/{0}/{1}.h".format(os.path.basename(os.path.dirname(path).replace("-","_")), os.path.splitext(os.path.basename(path))[0])]
             with open(os.path.abspath(path), "r") as f:
                 self.allJSON += [json.load(f)]
 
@@ -49,7 +49,7 @@ class JSONParser:
         classes = self.__getFieldForAllFiles("classes")
         # Filter out classes blocks not of our supported block types.
         SUPPORTED_BLOCK_TYPES = ["::gr::block", "::gr::sync_block", "::gr::sync_interpolator", "::gr::sync_decimator"]
-        classes = [clazz for clazz in classes if "::".join(clazz[0]["bases"]).replace("::::","::") in SUPPORTED_BLOCK_TYPES]
+        classes = [clazz for clazz in classes if "::".join(clazz[0].get("bases","")).replace("::::","::") in SUPPORTED_BLOCK_TYPES]
 
         # For each class, assemble the strings we'll need based on arguments, etc
         for clazz in classes:
@@ -63,7 +63,7 @@ class JSONParser:
                             factoryArgs += ["const Pothos::DType& itemsize"]
                             makeCallArgs += ["itemsize.size()"]
                             func["dtype"] = "itemsize"
-                        if ("sizeof_stream_item" in arg["name"]) and ("size_t" in arg["dtype"]):
+                        elif ("sizeof_stream_item" in arg["name"]) and ("size_t" in arg["dtype"]):
                             factoryArgs += ["const Pothos::DType& sizeof_stream_item"]
                             makeCallArgs += ["sizeof_stream_item.size()"]
                             func["dtype"] = "sizeof_stream_item"
@@ -77,7 +77,7 @@ class JSONParser:
                     func["className"] = clazz[0]["name"]
                     func["factoryArgs"] = ", ".join(factoryArgs)
                     func["makeCallArgs"] = ", ".join(makeCallArgs)
-                    func["vlen"] = "vlen" if "vlen" in func["makeCallArgs"] else 1
+                    func["vlen"] = "vlen" if "vlen," in func["makeCallArgs"] else 1
                     if "dtype" not in func: func["dtype"] = "Pothos::DType()"
                 else:
                     continue

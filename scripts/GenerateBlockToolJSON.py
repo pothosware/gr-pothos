@@ -18,7 +18,7 @@ if __name__ == "__main__":
     includes = args.include
     for name in args.names:
         namespace = ['gr', name.replace("-","_")]
-        prefix_include_root = 'include/gnuradio/'+name
+        prefix_include_root = 'include/gnuradio/'+name.replace("-","_")
         module_dir = os.path.abspath(os.path.join(args.prefix, prefix_include_root))
 
         import warnings

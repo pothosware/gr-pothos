@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     parser = JSONParser.JSONParser(args.input_dir, args.prefix)
 
-    namespace = "gr::"+os.path.basename(args.input_dir)
+    namespace = "gr::"+os.path.basename(args.input_dir).replace("-","_")
     enums = parser.getEnums()
     headers = parser.getIncludes()
     factories = parser.getFactories()

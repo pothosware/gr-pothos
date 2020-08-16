@@ -96,7 +96,6 @@ class JSONGenerator:
         output_dir = self.output_dir
         if output_dir and not os.path.exists(output_dir):
             output_dir = os.path.abspath(output_dir)
-            print('creating output directory {}'.format(output_dir))
             os.makedirs(output_dir)
 
         return output_dir
