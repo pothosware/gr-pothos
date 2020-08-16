@@ -17,30 +17,44 @@ class JSONParser:
         if not os.path.exists(self.moduleDir):
             raise RuntimeError("The given module directory doesn't exist: "+self.moduleDir)
 
-        self.jsonPaths = [p for p in os.listdir(self.moduleDir) if p.endswith(".json")]
+        self.jsonPaths = [os.path.join(self.moduleDir, p) for p in os.listdir(self.moduleDir) if p.endswith(".json")]
         for path in self.jsonPaths:
             self.includes += ["gnuradio/{0}/{1}.h".format(os.path.basename(os.path.dirname(path)), os.path.splitext(os.path.basename(path))[0])]
             with open(os.path.abspath(path), "r") as f:
                 self.allJSON += [json.load(f)]
 
-    # Assumption: same for all files
-    def getNamespace(self):
-        return self.allJSON[0]["module_name"]
-
     def getIncludes(self):
         return self.includes
 
     def getEnums(self):
-        return self.__getFieldForAllFiles("enums")
+        enums = []
+
+        # BlockTool doesn't distinguish between enums and enum classes, so
+        # we need to check the header to see if this is an enum class.
+        #
+        # See: https://github.com/gnuradio/gnuradio/issues/3703
+        for fileJSON, include in zip(self.allJSON, self.includes):
+            if len(fileJSON["namespace"]["enums"]) > 0:
+                contents = ""
+                with open(os.path.join(self.grInstallDir, "include", include),"r") as f:
+                    contents = f.read()
+                for enum in fileJSON["namespace"]["enums"]:
+                    enumClassStr = "enum class {0}".format(enum["name"])
+                    enum["isEnumClass"] = (enumClassStr in contents)
+                    enums.append(enum)
+
+        return enums
 
     def getClasses(self):
         classes = self.__getFieldForAllFiles("classes")
+        # Filter out classes blocks not of our supported block types.
+        SUPPORTED_BLOCK_TYPES = ["::gr::block", "::gr::sync_block", "::gr::sync_interpolator", "::gr::sync_decimator"]
+        classes = [clazz for clazz in classes if "::".join(clazz[0]["bases"]).replace("::::") in SUPPORTED_BLOCK_TYPES]
 
         # For each class, assemble the strings we'll need based on arguments, etc
         for clazz in classes:
-            for func in clazz["member_functions"]:
+            for func in clazz[0]["member_functions"]:
                 if func["name"] == "make":
-
                     factoryArgs = []
                     makeCallArgs = []
                     for i,arg in enumerate(func["arguments"]):
@@ -48,7 +62,7 @@ class JSONParser:
                         if ("itemsize" in arg["name"]) and ("size_t" in arg["dtype"]):
                             factoryArgs += ["const Pothos::DType& itemsize"]
                             makeCallArgs += ["itemsize.size()"]
-                        elif arg["dtype"] == "char*":
+                        elif arg["dtype"].replace(" ","") == "char*":
                             factoryArgs += ["const std::string& {0}".format(arg["name"])]
                             makeCallArgs += ["const_cast<char*>({0}.c_str())".format(arg["name"])]
                         else:
@@ -66,6 +80,6 @@ class JSONParser:
         outputs = []
         for fileJSON in self.allJSON:
             if len(fileJSON["namespace"][fieldName]) > 0:
-                outputs.apend(fileJSON["namespace"][fieldName])
+                outputs.append(fileJSON["namespace"][fieldName])
 
         return outputs

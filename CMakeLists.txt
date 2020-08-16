@@ -226,6 +226,8 @@ endforeach (inc_dir)
 ########################################################################
 # Build modules
 ########################################################################
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 foreach (comp_name ${COMP_NAMES})
 
     set(blocktool_output_dir ${CMAKE_CURRENT_BINARY_DIR}/blocktool_output/${comp_name})
@@ -240,7 +242,9 @@ foreach (comp_name ${COMP_NAMES})
             --prefix=${GR_ROOT}
             --output-dir=${blocktool_output_dir}
             ${comp_name}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateBlockToolJSON.py)
+        DEPENDS
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateBlockToolJSON.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/common/JSONGenerator.py)
 
     set(doc_sources "")
     set(wrapper_output
@@ -255,19 +259,16 @@ foreach (comp_name ${COMP_NAMES})
     add_custom_command(
         OUTPUT ${wrapper_output}
         COMMAND ${PYTHON_EXECUTABLE} -B
-            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
-            --target=${comp_name}
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateWrapperCCFromJSON.py
             --prefix=${GR_ROOT}
+            --input-dir=${blocktool_output_dir}
             --out=${wrapper_output}
-            --log=${CMAKE_CURRENT_BINARY_DIR}/${comp_name}.log
         DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/registration.tmpl.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/GrPothosUtil.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/CppHeaderParser.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/xmltodict.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/blacklist.json
+            ${comp_name}_blocktool_output
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/GenerateWrapperCCFromJSON.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/common/JSONParser.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/registration.tmpl.cpp
             ${headers}
-            ${grc_blocks}
     )
 
 #    if ("${comp_name}" STREQUAL "blocks")

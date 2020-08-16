@@ -18,82 +18,13 @@ using namespace gr;
  * make GrPothosBlock wrapper with a gr::block
  **********************************************************************/
 template <typename BlockType>
-std::shared_ptr<Pothos::Block> makeGrPothosBlock(GRTraits<BlockType>::SPtr block, size_t vlen, const Pothos::DType& overrideDType)
+static std::shared_ptr<Pothos::Block> makeGrPothosBlock(typename GRTraits<BlockType>::SPtr block, size_t vlen, const Pothos::DType& overrideDType)
 {
-    auto block_ptr = GRTraits<BlockType>::dynamicPointerCast<gr::block>(block);
+    gr::block_sptr block_ptr = typename GRTraits<BlockType>::dynamicPointerCast(block);
     auto env = Pothos::ProxyEnvironment::make("managed");
     auto registry = env->findProxy("Pothos/BlockRegistry");
     return registry.call<std::shared_ptr<Pothos::Block>>("/gnuradio/block", block_ptr, vlen, overrideDType);
 }
-
-/***********************************************************************
- * create block factories
- **********************************************************************/
-
-// To disambiguate
-using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
-
-% for factory in factories:
-
-% for ns in namespace.split("::"):
-% if ns:
-namespace ${ns} {
-% endif
-% endfor
-
-static std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_factory_args})
-{
-    auto __orig_block = ${factory.factory_function_path}(${factory.internal_factory_args});
-    auto __pothos_block = makeGrPothosBlock(__orig_block, ${factory.vlen}, ${factory.dtype});
-    auto __orig_block_ref = std::ref(*static_cast<${factory.namespace}::${factory.className} *>(__orig_block.get()));
-    % if factory.block_methods:
-    % endif
-    % for method in factory.block_methods:
-    __pothos_block->registerCallable("${method.name}", Pothos::Callable(&${factory.namespace}::${factory.className}::${method.name}).bind(__orig_block_ref, 0));
-    % if not method.parameters and method.name not in ["start", "stop"]:
-    __pothos_block->registerProbe("${method.name}", "${method.name}_triggered", "probe_${method.name}");
-    %endif
-    % endfor
-    __pothos_block->registerCallable("declare_sample_delay", Pothos::Callable((DeclareSampleDelayPtr)&${factory.namespace}::${factory.className}::declare_sample_delay).bind(__orig_block_ref, 0));
-    __pothos_block->registerCallable("tag_propagation_policy", Pothos::Callable(&${factory.namespace}::${factory.className}::tag_propagation_policy).bind(__orig_block_ref, 0));
-    __pothos_block->registerCallable("set_tag_propagation_policy", Pothos::Callable(&${factory.namespace}::${factory.className}::set_tag_propagation_policy).bind(__orig_block_ref, 0));
-    return __pothos_block;
-}
-
-% for ns in factory.namespace.split("::"):
-} //namespace $ns
-% endfor
-% endfor
-
-/***********************************************************************
- * meta block factories
- **********************************************************************/
-% for factory in meta_factories:
-
-% for ns in factory.namespace.split("::"):
-namespace ${ns} {
-% endfor
-
-std::shared_ptr<Pothos::Block> factory__${factory.name}(${factory.exported_factory_args})
-{
-    % for sub_factory in factory.sub_factories:
-    if (${factory.type_key} == "${sub_factory.name}") return factory__${sub_factory.name}(${sub_factory['internal_factory_args']});
-    % endfor
-
-    throw Pothos::RuntimeException("${factory.name} unknown type: "+${factory.type_key});
-}
-
-% for ns in factory.namespace.split("::"):
-} //namespace $ns
-% endfor
-% endfor
-
-/***********************************************************************
- * register block factories
- **********************************************************************/
-% for registration in registrations:
-static Pothos::BlockRegistry register__${registration.name}("${registration.path}", &${registration.namespace}::factory__${registration.name});
-% endfor
 
 /***********************************************************************
  * enum conversions
@@ -101,12 +32,16 @@ static Pothos::BlockRegistry register__${registration.name}("${registration.path
 % for enum in enums:
 static ${namespace}::${enum["name"]} int_to_${enum["name"]}(const int v)
 {
-    return ${namespace}${enum["name"]}(v);
+    return ${namespace}::${enum["name"]}(v);
 }
 static ${namespace}::${enum["name"]} string_to_${enum["name"]}(const std::string &s)
 {
-    % for value in enum["value"]:
+    % for value in enum["values"]:
+    % if enum["isEnumClass"]:
+    if (s == "${value[0]}") return ${namespace}::${enum["name"]}::${value[0]};
+    % else:
     if (s == "${value[0]}") return ${namespace}::${value[0]};
+    % endif
     % endfor
     throw Pothos::RuntimeException("convert string to ${enum["name"]} unknown value: "+s);
 }
@@ -119,14 +54,8 @@ static ${namespace}::${enum["name"]} string_to_${enum["name"]}(const std::string
 
 pothos_static_block(registerGrPothosUtilBlockDocs)
 {
-    % for path, blockDesc in blockDescs.items():
-    <%
-    escaped = ''.join([hex(ord(ch)).replace('0x', '\\x') for ch in blockDesc])
-    %>
-    Pothos::PluginRegistry::add("/blocks/docs${path}", std::string("${escaped}"));
-    % endfor
     % for enum in enums:
-    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_${enum.namespace.replace('::', '_')}${enum.name}", Pothos::Callable(&int_to_${enum.name}));
-    Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_${enum.namespace.replace('::', '_')}${enum.name}", Pothos::Callable(&string_to_${enum.name}));
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/int_to_${namespace.replace('::', '_')}_${enum["name"]}", Pothos::Callable(&int_to_${enum["name"]}));
+    Pothos::PluginRegistry::add("/object/convert/gr_enums/string_to_${namespace.replace('::', '_')}_${enum["name"]}", Pothos::Callable(&string_to_${enum["name"]}));
     % endfor
 }

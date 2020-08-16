@@ -33,7 +33,8 @@
 
 constexpr bool GRUsesStdSPtr = std::is_same<gr::block_sptr, std::shared_ptr<gr::block>>::value;
 
-template <typename T, std::enable_if<GRUsesStdSPtr>::type* = nullptr>
+//template <typename T, std::enable_if<GRUsesStdSPtr>::type* = nullptr>
+template <typename T>
 struct GRTraits
 {
     using SPtr = typename std::shared_ptr<T>;
@@ -43,8 +44,9 @@ struct GRTraits
     {
         return std::dynamic_pointer_cast<U>(input);
     }
-}
+};
 
+/*
 template <typename T, std::enable_if<!GRUsesStdSPtr>::type* = nullptr>
 struct GRTraits
 {
@@ -56,6 +58,7 @@ struct GRTraits
         return boost::dynamic_pointer_cast<U>(input);
     }
 }
+*/
 
 /*!
  * Conversions between Object and pmt_t types.
