@@ -123,10 +123,8 @@ find_package(Gnuradio 3.8 REQUIRED COMPONENTS ${COMP_NAMES})
 
 ########################################################################
 # Build block adapter
-#
-# Test with PothosUtil --self-tests=/gnuradio
 ########################################################################
-#add_subdirectory(GrPothosBlock)
+add_subdirectory(GrPothosBlock)
 
 ########################################################################
 # Build modules
@@ -249,9 +247,7 @@ endforeach (comp_name)
 POTHOS_MODULE_UTIL(
     TARGET runtimeSupport
     SOURCES runtime_wrapper.cc
-    LIBRARIES
-        ${GNURADIO_LIBRARIES}
-        ${Boost_LIBRARIES}
+    LIBRARIES gnuradio::gnuradio-runtime
     DESTINATION gnuradio
 )
 
