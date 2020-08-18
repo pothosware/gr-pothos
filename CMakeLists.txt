@@ -44,7 +44,6 @@ list(APPEND COMPONENT_BLACKLIST
     uhd fcd comedi #ignore devices, pothos-sdr
     wxgui qtgui #ignore graphics, pothos-widgets
     messages thread swig #runtime headers
-    network #TODO: figure out bug
 )
 
 ########################################################################
