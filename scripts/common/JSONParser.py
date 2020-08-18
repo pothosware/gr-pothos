@@ -77,7 +77,16 @@ class JSONParser:
                     func["className"] = clazz[0]["name"]
                     func["factoryArgs"] = ", ".join(factoryArgs)
                     func["makeCallArgs"] = ", ".join(makeCallArgs)
-                    func["vlen"] = "vlen" if "vlen," in func["makeCallArgs"] else 1
+
+                    # GNU Radio is inconsistent in its vlen names post-3.8, so check
+                    # all of these
+                    func["vlen"] = 1
+                    for vlenName in ["vlen", "veclen", "vecLen"]:
+                        vlenArgs = [arg for arg in func["arguments"] if arg["name"] == vlenName]
+                        if vlenArgs:
+                            func["vlen"] = vlenName
+                            break
+
                     if "dtype" not in func: func["dtype"] = "Pothos::DType()"
                 else:
                     continue
