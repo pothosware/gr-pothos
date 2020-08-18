@@ -35,10 +35,10 @@ using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
 
 % for clazz in classes:
 <%
-    SKIP = ["squelch_base_cc", "squelch_base_ff"]
-    if clazz[0]["name"] in SKIP: continue
+    factoryFuncs = [func for func in clazz[0]["member_functions"] if func["name"] == "make"]
+    if not factoryFuncs: continue
 
-    factory = [func for func in clazz[0]["member_functions"] if func["name"] == "make"][0]
+    factory = factoryFuncs[0]
     methods = [func for func in clazz[0]["member_functions"] if func["name"] != "make"]
 %>
 
@@ -46,7 +46,7 @@ using DeclareSampleDelayPtr = void(gr::block::*)(unsigned);
 namespace ${ns} {
 % endfor
 
-std::shared_ptr<Pothos::Block> factory__${clazz[0]["name"]}(${factory["factoryArgs"]})
+static std::shared_ptr<Pothos::Block> factory__${clazz[0]["name"]}(${factory["factoryArgs"]})
 {
     auto __orig_block = ${factory["className"]}::${factory["name"]}(${factory["makeCallArgs"]});
     auto __pothos_block = makeGrPothosBlock<${namespace}::${factory["className"]}>(__orig_block, ${factory["vlen"]}, ${factory["dtype"]});
