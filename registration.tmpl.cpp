@@ -16,6 +16,7 @@ using namespace gr;
 /***********************************************************************
  * make GrPothosBlock wrapper with a gr::block
  **********************************************************************/
+// TODO: take in GNU Radio block as GRSPtr (see GrPothosBlock/pothos_support.h)
 template <typename BlockType>
 std::shared_ptr<Pothos::Block> makeGrPothosBlock(boost::shared_ptr<BlockType> block, size_t vlen, const Pothos::DType& overrideDType)
 {

@@ -38,7 +38,7 @@ message(STATUS "PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 include(FindPythonModule)
-# TODO: check for BlockTool
+# TODO: check for GR's BlockTool, used by template code
 
 list(APPEND COMPONENT_BLACKLIST
     uhd fcd comedi #ignore devices, pothos-sdr
@@ -143,6 +143,8 @@ foreach (comp_name ${COMP_NAMES})
     set(blocktool_output_path ${blocktool_output_dir}/make_target)
     add_custom_target(${comp_name}_blocktool_output ALL DEPENDS ${blocktool_output_path})
 
+    # TODO: possibly commit BlockTool output files. These should rarely change, and
+    # these BlockTool calls are easily 95% of the build time.
     add_custom_command(
         OUTPUT ${blocktool_output_path}
         COMMENT "Generating ${comp_name} JSON (this may take a while...)"
