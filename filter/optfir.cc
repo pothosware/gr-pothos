@@ -19,12 +19,12 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "optfir.h"
-
 #include <Pothos/Exception.hpp>
 #include <Pothos/Framework.hpp>
 #include <Pothos/Object.hpp>
 #include <Pothos/Plugin.hpp>
+
+#include "optfir.h"
 
 #include <gnuradio/filter/pm_remez.h>
 

@@ -54,6 +54,11 @@ if (NOT Gnuradio_FOUND)
     message(FATAL "Requires GNU Radio")
 endif()
 
+find_package(VOLK CONFIG)
+if (NOT VOLK_FOUND)
+    message(FATAL "Requires VOLK")
+endif()
+
 include_directories(${GNURADIO_PMT_INCLUDE_DIRS})
 include_directories(${GNURADIO_RUNTIME_INCLUDE_DIRS})
 include_directories(${GNURADIO_BLOCKS_INCLUDE_DIRS})

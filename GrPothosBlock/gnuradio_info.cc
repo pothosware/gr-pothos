@@ -29,12 +29,13 @@
 
 #include <json.hpp>
 
+#include <volk/volk_common.h> //VOLK_API
+
 // For most of VOLK's history, the version header wasn't installed,
 // so just declare the function we need here.
-extern "C"
-{
-    const char* volk_version();
-}
+__VOLK_DECL_BEGIN
+    VOLK_API const char* volk_version();
+__VOLK_DECL_END
 
 using json = nlohmann::json;
 

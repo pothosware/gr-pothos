@@ -60,6 +60,7 @@ POTHOS_MODULE_UTIL(
         ${appender_sources}
         ${test_sources}
     LIBRARIES
+        ${VOLK_LIBRARIES}
         ${GNURADIO_LIBRARIES}
         ${Boost_LIBRARIES}
         ${GR_POTHOS_BLOCK_LIBS}
